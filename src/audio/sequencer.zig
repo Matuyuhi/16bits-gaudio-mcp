@@ -5,11 +5,22 @@ pub const Scale = enum {
     minor,
     pentatonic,
     blues,
+    dorian,
+    mixolydian,
+    phrygian,
+    lydian,
+    harmonic_minor,
+    chromatic,
 };
 
 pub const ChordQuality = enum {
     major_chord,
     minor_chord,
+    diminished,
+    augmented,
+    sus2,
+    sus4,
+    seventh,
 };
 
 pub const ChordInfo = struct {
@@ -24,6 +35,12 @@ pub fn getScaleIntervals(scale: Scale) []const u8 {
         .minor => &[_]u8{ 0, 2, 3, 5, 7, 8, 10 },
         .pentatonic => &[_]u8{ 0, 2, 4, 7, 9 },
         .blues => &[_]u8{ 0, 3, 5, 6, 7, 10 },
+        .dorian => &[_]u8{ 0, 2, 3, 5, 7, 9, 10 },
+        .mixolydian => &[_]u8{ 0, 2, 4, 5, 7, 9, 10 },
+        .phrygian => &[_]u8{ 0, 1, 3, 5, 7, 8, 10 },
+        .lydian => &[_]u8{ 0, 2, 4, 6, 7, 9, 11 },
+        .harmonic_minor => &[_]u8{ 0, 2, 3, 5, 7, 8, 11 },
+        .chromatic => &[_]u8{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 },
     };
 }
 
@@ -99,12 +116,19 @@ pub fn parseScale(name: []const u8) !Scale {
     if (std.mem.eql(u8, name, "minor")) return .minor;
     if (std.mem.eql(u8, name, "pentatonic")) return .pentatonic;
     if (std.mem.eql(u8, name, "blues")) return .blues;
+    if (std.mem.eql(u8, name, "dorian")) return .dorian;
+    if (std.mem.eql(u8, name, "mixolydian")) return .mixolydian;
+    if (std.mem.eql(u8, name, "phrygian")) return .phrygian;
+    if (std.mem.eql(u8, name, "lydian")) return .lydian;
+    if (std.mem.eql(u8, name, "harmonic_minor")) return .harmonic_minor;
+    if (std.mem.eql(u8, name, "chromatic")) return .chromatic;
     return error.InvalidScale;
 }
 
 /// Get chord progression for a given style.
 /// Returns array of ChordInfo for a 4-bar loop.
 pub fn getChordProgression(style: []const u8) ![]const ChordInfo {
+    // --- Original 5 ---
     if (std.mem.eql(u8, style, "adventure")) {
         // I - IV - V - I
         return &[_]ChordInfo{
@@ -150,20 +174,118 @@ pub fn getChordProgression(style: []const u8) ![]const ChordInfo {
             .{ .root_semitone = 9, .quality = .major_chord },
         };
     }
+    // --- New 10 styles ---
+    if (std.mem.eql(u8, style, "field")) {
+        // I - vi - IV - V (pastoral, open feel)
+        return &[_]ChordInfo{
+            .{ .root_semitone = 0, .quality = .major_chord },
+            .{ .root_semitone = 9, .quality = .minor_chord },
+            .{ .root_semitone = 5, .quality = .major_chord },
+            .{ .root_semitone = 7, .quality = .major_chord },
+        };
+    }
+    if (std.mem.eql(u8, style, "puzzle")) {
+        // I - iii - vi - IV (quirky, thoughtful)
+        return &[_]ChordInfo{
+            .{ .root_semitone = 0, .quality = .major_chord },
+            .{ .root_semitone = 4, .quality = .minor_chord },
+            .{ .root_semitone = 9, .quality = .minor_chord },
+            .{ .root_semitone = 5, .quality = .major_chord },
+        };
+    }
+    if (std.mem.eql(u8, style, "menu")) {
+        // I - IV - I - V (simple, clean)
+        return &[_]ChordInfo{
+            .{ .root_semitone = 0, .quality = .major_chord },
+            .{ .root_semitone = 5, .quality = .major_chord },
+            .{ .root_semitone = 0, .quality = .major_chord },
+            .{ .root_semitone = 7, .quality = .major_chord },
+        };
+    }
+    if (std.mem.eql(u8, style, "horror")) {
+        // i - bII - V - i (dark, unsettling)
+        return &[_]ChordInfo{
+            .{ .root_semitone = 0, .quality = .minor_chord },
+            .{ .root_semitone = 1, .quality = .major_chord },
+            .{ .root_semitone = 7, .quality = .major_chord },
+            .{ .root_semitone = 0, .quality = .minor_chord },
+        };
+    }
+    if (std.mem.eql(u8, style, "space")) {
+        // Isus4 - bVII - IV - I (ethereal, floating)
+        return &[_]ChordInfo{
+            .{ .root_semitone = 0, .quality = .sus4 },
+            .{ .root_semitone = 10, .quality = .major_chord },
+            .{ .root_semitone = 5, .quality = .major_chord },
+            .{ .root_semitone = 0, .quality = .major_chord },
+        };
+    }
+    if (std.mem.eql(u8, style, "shop")) {
+        // I - IV - iii - vi (upbeat, friendly)
+        return &[_]ChordInfo{
+            .{ .root_semitone = 0, .quality = .major_chord },
+            .{ .root_semitone = 5, .quality = .major_chord },
+            .{ .root_semitone = 4, .quality = .minor_chord },
+            .{ .root_semitone = 9, .quality = .minor_chord },
+        };
+    }
+    if (std.mem.eql(u8, style, "castle")) {
+        // i - iv - V - i (regal, minor)
+        return &[_]ChordInfo{
+            .{ .root_semitone = 0, .quality = .minor_chord },
+            .{ .root_semitone = 5, .quality = .minor_chord },
+            .{ .root_semitone = 7, .quality = .major_chord },
+            .{ .root_semitone = 0, .quality = .minor_chord },
+        };
+    }
+    if (std.mem.eql(u8, style, "underwater")) {
+        // Isus2 - IV - vi - Vsus4 (dreamy, flowing)
+        return &[_]ChordInfo{
+            .{ .root_semitone = 0, .quality = .sus2 },
+            .{ .root_semitone = 5, .quality = .major_chord },
+            .{ .root_semitone = 9, .quality = .minor_chord },
+            .{ .root_semitone = 7, .quality = .sus4 },
+        };
+    }
+    if (std.mem.eql(u8, style, "forest")) {
+        // I - iii - IV - vi (natural, gentle)
+        return &[_]ChordInfo{
+            .{ .root_semitone = 0, .quality = .major_chord },
+            .{ .root_semitone = 4, .quality = .minor_chord },
+            .{ .root_semitone = 5, .quality = .major_chord },
+            .{ .root_semitone = 9, .quality = .minor_chord },
+        };
+    }
+    if (std.mem.eql(u8, style, "cyber")) {
+        // i - bVII7 - bVI - bVII (edgy, electronic)
+        return &[_]ChordInfo{
+            .{ .root_semitone = 0, .quality = .minor_chord },
+            .{ .root_semitone = 10, .quality = .seventh },
+            .{ .root_semitone = 8, .quality = .major_chord },
+            .{ .root_semitone = 10, .quality = .major_chord },
+        };
+    }
     return error.UnknownStyle;
 }
 
 /// Get beats per bar for a given style
 pub fn getBeatsPerBar(style: []const u8) u8 {
-    if (std.mem.eql(u8, style, "town")) return 3; // 3/4 time
+    if (std.mem.eql(u8, style, "town")) return 3; // 3/4 waltz
+    if (std.mem.eql(u8, style, "forest")) return 3; // 3/4 waltz
+    if (std.mem.eql(u8, style, "puzzle")) return 5; // 5/4 odd meter
     return 4; // 4/4 time
 }
 
 /// Get chord tones as semitone offsets from chord root
-pub fn getChordTones(quality: ChordQuality) [3]u8 {
+pub fn getChordTones(quality: ChordQuality) []const u8 {
     return switch (quality) {
-        .major_chord => .{ 0, 4, 7 }, // root, major 3rd, perfect 5th
-        .minor_chord => .{ 0, 3, 7 }, // root, minor 3rd, perfect 5th
+        .major_chord => &[_]u8{ 0, 4, 7 }, // root, major 3rd, perfect 5th
+        .minor_chord => &[_]u8{ 0, 3, 7 }, // root, minor 3rd, perfect 5th
+        .diminished => &[_]u8{ 0, 3, 6 }, // root, minor 3rd, diminished 5th
+        .augmented => &[_]u8{ 0, 4, 8 }, // root, major 3rd, augmented 5th
+        .sus2 => &[_]u8{ 0, 2, 7 }, // root, major 2nd, perfect 5th
+        .sus4 => &[_]u8{ 0, 5, 7 }, // root, perfect 4th, perfect 5th
+        .seventh => &[_]u8{ 0, 4, 7, 10 }, // root, major 3rd, 5th, minor 7th
     };
 }
 
