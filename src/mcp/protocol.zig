@@ -102,6 +102,6 @@ pub fn writeToolResult(writer: *IoWriter, id_json: []const u8, text: []const u8,
 /// Write the initialize response
 pub fn writeInitializeResult(writer: *IoWriter, id_json: []const u8) !void {
     try writeJsonRpcResult(writer, id_json,
-        \\{"protocolVersion":"2024-11-05","capabilities":{"tools":{}},"serverInfo":{"name":"16bits-audio-mcp","version":"0.2.1"}}
+        \\{"protocolVersion":"2024-11-05","capabilities":{"tools":{}},"serverInfo":{"name":"16bits-audio-mcp","version":"0.3.0"}}
     );
 }
