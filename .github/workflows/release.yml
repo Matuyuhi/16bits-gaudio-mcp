@@ -152,7 +152,7 @@ jobs:
       - name: Checkout Homebrew tap
         uses: actions/checkout@v4
         with:
-          repository: Matuyuhi/Matuyuhi-homebrew-tools
+          repository: Matuyuhi/homebrew-tools
           token: ${{ secrets.TAP_GITHUB_TOKEN }}
           path: homebrew-tap
 
