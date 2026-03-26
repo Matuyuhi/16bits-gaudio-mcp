@@ -1,45 +1,48 @@
 # 16bits-audio-mcp
 
-ゲーム用BGM・SE・ジングルを高品質に生成できるZig製MCPサーバー。
-Claudeがツールを呼ぶだけで、ループ可能なBGM・クリア音・効果音などの.wavファイルを生成できます。
+A Zig-powered MCP server that generates game audio — loopable BGMs, sound effects, and jingles — as 16-bit PCM WAV files.
 
-- 外部依存ゼロ（全てZig標準ライブラリのみ）
-- 16bit PCM WAV出力
-- FM合成・シュローダーリバーブ・ADSR・マルチトラックミキシング搭載
+Claude calls the tools, and `.wav` files come out. That's it.
 
-## インストール
+- Zero external dependencies (Zig standard library only)
+- 16-bit PCM WAV output
+- FM synthesis, Schroeder reverb, ADSR envelopes, multi-track mixing
 
-### Homebrew（推奨）
+## Install
+
+### Homebrew (recommended)
 
 ```bash
 brew tap Matuyuhi/tools
 brew install 16bits-audio-mcp
 ```
 
-### ワンライナー
+### One-liner
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Matuyuhi/16bits-gaudio-mcp/main/install.sh | bash
 ```
 
-### ソースからビルド
+### Build from source
 
 ```bash
 git clone https://github.com/Matuyuhi/16bits-gaudio-mcp.git
 cd 16bits-gaudio-mcp
-make install   # ~/.local/bin にインストール
+make install   # installs to ~/.local/bin
 ```
 
-または:
+Or just:
 
 ```bash
 zig build
-# バイナリ: zig-out/bin/16bits-audio-mcp
+# binary: zig-out/bin/16bits-audio-mcp
 ```
 
-## Claude Desktop設定
+## Configuration
 
-`~/Library/Application Support/Claude/claude_desktop_config.json` に以下を追加:
+### Claude Code
+
+Add to `~/.claude/settings.json`:
 
 ```json
 {
@@ -51,8 +54,21 @@ zig build
 }
 ```
 
-Homebrew/install.shでインストールした場合はバイナリ名だけでOKです。
-ソースビルドの場合はフルパスを指定してください:
+### Claude Desktop
+
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "16bits-audio": {
+      "command": "16bits-audio-mcp"
+    }
+  }
+}
+```
+
+If you built from source, use the full path instead:
 
 ```json
 {
@@ -64,171 +80,173 @@ Homebrew/install.shでインストールした場合はバイナリ名だけでO
 }
 ```
 
-設定例は `examples/claude_desktop_config.json` にあります。
-
-## ツールリファレンス（全9種）
+## Tools (9 total)
 
 ### bgm_compose
 
-ループ可能なBGMをマルチトラック（メロディ・ベース・ハーモニー・パーカッション）で生成。
+Generate loopable BGM with 4 tracks (melody, bass, harmony, percussion).
 
-| パラメータ | 型 | 説明 |
+| Parameter | Type | Description |
 |---|---|---|
-| output | string | 出力WAVファイルパス |
+| output | string | Output WAV file path |
 | style | string | `adventure` / `dungeon` / `boss` / `town` / `battle` |
-| bpm | number | テンポ（BPM） |
-| duration_bars | number | 小節数 |
-| sample_rate | number | サンプルレート（例: 44100） |
-| key | string | 調（例: "C", "F#"） |
+| bpm | number | Beats per minute |
+| duration_bars | number | Number of bars |
+| sample_rate | number | Sample rate (e.g. 44100) |
+| key | string | Musical key (e.g. "C", "F#") |
 | scale | string | `major` / `minor` / `pentatonic` / `blues` |
-| seed | number | 乱数シード（決定的生成用） |
+| seed | number | Random seed for deterministic generation |
 
 ### jingle_gen
 
-ゲームイベント用ジングル・クリア音を生成（0.8〜5秒）。
+Generate short game event jingles (0.8–5 seconds).
 
-| パラメータ | 型 | 説明 |
+| Parameter | Type | Description |
 |---|---|---|
-| output | string | 出力WAVファイルパス |
+| output | string | Output WAV file path |
 | type | string | `stage_clear` / `game_over` / `level_up` / `item_get` / `boss_clear` |
-| sample_rate | number | サンプルレート |
-| key | string | 調 |
+| sample_rate | number | Sample rate |
+| key | string | Musical key |
 | tempo_feel | string | `fast` / `normal` / `triumphant` |
 
 ### se_gen
 
-ゲーム効果音を生成（0.1〜1.5秒）。
+Generate game sound effects (0.1–1.5 seconds).
 
-| パラメータ | 型 | 説明 |
+| Parameter | Type | Description |
 |---|---|---|
-| output | string | 出力WAVファイルパス |
+| output | string | Output WAV file path |
 | type | string | `jump` / `hit` / `coin` / `explosion` / `laser` / `powerup` / `error` / `footstep` |
-| pitch | number | ピッチ倍率（1.0=標準、0.5=1oct下、2.0=1oct上） |
-| volume | number | 音量（0.0〜1.0） |
-| sample_rate | number | サンプルレート |
+| pitch | number | Pitch multiplier (1.0 = standard, 0.5 = octave down, 2.0 = octave up) |
+| volume | number | Volume (0.0–1.0) |
+| sample_rate | number | Sample rate |
 
 ### note_synth
 
-単音または和音を合成してWAVに書き出す（ローレベルAPI）。
+Synthesize single notes or chords to WAV (low-level API).
 
-| パラメータ | 型 | 説明 |
+| Parameter | Type | Description |
 |---|---|---|
-| output | string | 出力WAVファイルパス |
-| notes | string[] | ノート名（例: ["C4", "E4", "G4"]） |
+| output | string | Output WAV file path |
+| notes | string[] | Note names (e.g. ["C4", "E4", "G4"]) |
 | waveform | string | `sine` / `square` / `sawtooth` / `triangle` / `pulse` |
-| duration_ms | number | 長さ（ms） |
+| duration_ms | number | Duration in milliseconds |
 | adsr | object | `{attack_ms, decay_ms, sustain_level, release_ms}` |
-| sample_rate | number | サンプルレート |
-| reverb | boolean | リバーブ適用 |
+| sample_rate | number | Sample rate |
+| reverb | boolean | Apply reverb |
 
 ### fm_patch
 
-FM合成で1音を生成（YM2612風2オペレータ構成）。
+Generate a tone using FM synthesis (YM2612-style 2-operator).
 
-| パラメータ | 型 | 説明 |
+| Parameter | Type | Description |
 |---|---|---|
-| output | string | 出力WAVファイルパス |
-| carrier_note | string | キャリアノート（例: "A2"） |
-| modulator_ratio | number | モジュレータ周波数比 |
-| modulation_index | number | FM変調の深さ |
-| carrier_adsr | object | キャリアADSR |
-| modulator_adsr | object | モジュレータADSR |
-| duration_ms | number | 長さ（ms） |
-| sample_rate | number | サンプルレート |
+| output | string | Output WAV file path |
+| carrier_note | string | Carrier note (e.g. "A2") |
+| modulator_ratio | number | Modulator frequency ratio |
+| modulation_index | number | FM modulation depth |
+| carrier_adsr | object | Carrier ADSR envelope |
+| modulator_adsr | object | Modulator ADSR envelope |
+| duration_ms | number | Duration in milliseconds |
+| sample_rate | number | Sample rate |
 
 ### wav_fx
 
-既存WAVにエフェクトをかけて新しいWAVを生成。
+Apply effects to an existing WAV file.
 
-| パラメータ | 型 | 説明 |
+| Parameter | Type | Description |
 |---|---|---|
-| input | string | 入力WAVファイルパス |
-| output | string | 出力WAVファイルパス |
-| effects | object[] | エフェクト配列 |
+| input | string | Input WAV file path |
+| output | string | Output WAV file path |
+| effects | object[] | Array of effects |
 
-エフェクト種別:
-- `reverb`: `room_size`（0.0〜1.0）, `wet`（0.0〜1.0）
-- `delay`: `delay_ms`, `feedback`（0.0〜0.9）, `wet`（0.0〜1.0）
+Effect types:
+- `reverb`: `room_size` (0.0–1.0), `wet` (0.0–1.0)
+- `delay`: `delay_ms`, `feedback` (0.0–0.9), `wet` (0.0–1.0)
 - `lowpass`: `cutoff_hz`
 - `highpass`: `cutoff_hz`
 
 ### wav_mix
 
-複数WAVをミックス。
+Mix multiple WAV files into one.
 
-| パラメータ | 型 | 説明 |
+| Parameter | Type | Description |
 |---|---|---|
-| tracks | object[] | `{path, gain, offset_ms}` の配列 |
-| output | string | 出力WAVファイルパス |
-| normalize | boolean | true でピークを -1dBFS にノーマライズ |
+| tracks | object[] | `{path, gain, offset_ms}` array |
+| output | string | Output WAV file path |
+| normalize | boolean | Normalize peak to -1 dBFS |
 
 ### wav_info
 
-WAVファイルのメタデータと波形統計を返す。
+Get WAV file metadata and waveform statistics.
 
-| パラメータ | 型 | 説明 |
+| Parameter | Type | Description |
 |---|---|---|
-| path | string | WAVファイルパス |
+| path | string | WAV file path |
 
 ### wav_play
 
-WAVを非同期再生（macOS: afplay、Linux: aplay）。
+Play a WAV file asynchronously (macOS: afplay, Linux: aplay).
 
-| パラメータ | 型 | 説明 |
+| Parameter | Type | Description |
 |---|---|---|
-| path | string | WAVファイルパス |
+| path | string | WAV file path |
 
-## Claudeへのサンプルプロンプト
-
-```
-アドベンチャーゲーム用BGMを8バー、BPM140のCメジャーで生成して再生して
-```
+## Example Prompts
 
 ```
-ステージクリア音を生成して
+Generate an 8-bar adventure BGM at 140 BPM in C major and play it
 ```
 
 ```
-ジャンプSEと爆発SEを生成して
+Create a stage clear jingle
 ```
 
 ```
-BGMにリバーブをかけて別ファイルで保存して
+Generate a jump SE and an explosion SE
 ```
 
 ```
-Cメジャーの和音（C4, E4, G4）をサイン波で1秒間合成して
+Add reverb to the BGM and save it as a separate file
 ```
 
 ```
-FM合成でA2のベース音を作って。モジュレータ比2.0、変調深度3.0で
+Synthesize a C major chord (C4, E4, G4) with sine wave for 1 second
 ```
 
-## 音楽理論の制約
+```
+Create an FM bass sound on A2 with modulator ratio 2.0 and depth 3.0
+```
 
-### 対応キー
+## Music Theory Reference
 
-C, C#, D, D#, E, F, F#, G, G#, A, A#, B（及びフラット表記: Db, Eb, Gb, Ab, Bb）
+### Supported Keys
 
-### 対応スケール
+C, C#, D, D#, E, F, F#, G, G#, A, A#, B (and flats: Db, Eb, Gb, Ab, Bb)
 
-| スケール | 半音オフセット |
+### Scales
+
+| Scale | Semitone offsets |
 |---|---|
 | major | 0, 2, 4, 5, 7, 9, 11 |
 | minor | 0, 2, 3, 5, 7, 8, 10 |
 | pentatonic | 0, 2, 4, 7, 9 |
 | blues | 0, 3, 5, 6, 7, 10 |
 
-### BGMスタイル
+### BGM Styles
 
-| スタイル | 拍子 | コード進行 | BPM目安 |
+| Style | Time sig. | Chord progression | BPM range |
 |---|---|---|---|
-| adventure | 4/4 | I-IV-V-I | 120-160 |
-| dungeon | 4/4 | i-VI-VII-i | 80-100 |
-| boss | 4/4 | i-bVII-bVI-V | 140-180 |
-| town | 3/4 | I-V-vi-IV | 90-110 |
-| battle | 4/4 | ii-V-I-VI | 160-200 |
+| adventure | 4/4 | I–IV–V–I | 120–160 |
+| dungeon | 4/4 | i–VI–VII–i | 80–100 |
+| boss | 4/4 | i–bVII–bVI–V | 140–180 |
+| town | 3/4 | I–V–vi–IV | 90–110 |
+| battle | 4/4 | ii–V–I–VI | 160–200 |
 
-### ノート範囲
+### Note Range
 
-C0〜B9（MIDI 12〜131）。A4 = 440Hz。
+C0–B9 (MIDI 12–131). A4 = 440 Hz.
+
+## License
+
+MIT
