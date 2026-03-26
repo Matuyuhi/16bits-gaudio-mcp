@@ -1,5 +1,10 @@
 # 16bits-audio-mcp
 
+[![CI](https://github.com/Matuyuhi/16bits-gaudio-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Matuyuhi/16bits-gaudio-mcp/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/Matuyuhi/16bits-gaudio-mcp)](https://github.com/Matuyuhi/16bits-gaudio-mcp/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Zig](https://img.shields.io/badge/Zig-0.15.x-f7a41d)](https://ziglang.org/)
+
 A Zig-powered MCP server that generates game audio — loopable BGMs, sound effects, and jingles — as 16-bit PCM WAV files.
 
 Claude calls the tools, and `.wav` files come out. That's it.
@@ -7,6 +12,173 @@ Claude calls the tools, and `.wav` files come out. That's it.
 - Zero external dependencies (Zig standard library only)
 - 16-bit PCM WAV output
 - FM synthesis, Schroeder reverb, ADSR envelopes, multi-track mixing
+- Deterministic generation via seed — same seed = same output, every time
+
+## Quick Start
+
+```bash
+brew tap matuyuhi/tools
+brew install 16bits-audio-mcp
+```
+
+Add to your Claude config (`~/.claude/settings.json` for Claude Code, or `claude_desktop_config.json` for Desktop):
+
+```json
+{
+  "mcpServers": {
+    "16bits-audio": {
+      "command": "16bits-audio-mcp"
+    }
+  }
+}
+```
+
+Then just ask Claude:
+
+```
+Generate a dungeon BGM at 90 BPM in A harmonic_minor, 8 bars, and play it
+```
+
+## What You Can Generate
+
+### BGM — 15 styles
+
+Full 4-track compositions (melody, bass, harmony, percussion) with per-style timbre, rhythm, and reverb.
+
+| Style | Mood | Time Sig. | Chord Progression |
+|---|---|---|---|
+| `adventure` | Bright, heroic | 4/4 | I–IV–V–I |
+| `dungeon` | Dark, tense | 4/4 | i–VI–VII–i |
+| `boss` | Aggressive, dramatic | 4/4 | i–bVII–bVI–V |
+| `town` | Warm, waltz | 3/4 | I–V–vi–IV |
+| `battle` | Intense, driving | 4/4 | ii–V–I–VI |
+| `field` | Open, pastoral | 4/4 | I–vi–IV–V |
+| `puzzle` | Quirky, thoughtful | 5/4 | I–iii–vi–IV |
+| `menu` | Clean, ambient | 4/4 | I–IV–I–V |
+| `horror` | Unsettling, sparse | 4/4 | i–bII–V–i |
+| `space` | Ethereal, floating | 4/4 | Isus4–bVII–IV–I |
+| `shop` | Upbeat, friendly | 4/4 | I–IV–iii–vi |
+| `castle` | Regal, minor | 4/4 | i–iv–V–i |
+| `underwater` | Dreamy, flowing | 4/4 | Isus2–IV–vi–Vsus4 |
+| `forest` | Natural, gentle | 3/4 | I–iii–IV–vi |
+| `cyber` | Edgy, electronic | 4/4 | i–bVII7–bVI–bVII |
+
+Each style uses different waveforms, ADSR envelopes, percussion patterns (kick/snare/hihat/rim/shaker), swing, and reverb settings.
+
+### Sound Effects — 20 types
+
+| Type | Description | Duration |
+|---|---|---|
+| `jump` | Upward frequency sweep | 200ms |
+| `hit` | Noise burst, rapid decay | 100ms |
+| `coin` | Two-note chime (C6→E6) | 150ms |
+| `explosion` | Filtered noise rumble | 800ms |
+| `laser` | Downward sawtooth sweep | 300ms |
+| `powerup` | Ascending pentatonic arpeggio | 500ms |
+| `error` | Square wave with tremolo | 200ms |
+| `footstep` | Two filtered noise bursts | 200ms |
+| `menu_select` | Bright short blip | 80ms |
+| `menu_cancel` | Descending two-note blip | 120ms |
+| `dash` | Fast noise swoosh | 250ms |
+| `shield` | Metallic resonant tone | 400ms |
+| `heal` | Gentle ascending shimmer | 600ms |
+| `charge` | Rising frequency crescendo | 800ms |
+| `warp` | Wobbly FM sweep | 500ms |
+| `door` | Low resonant thud | 350ms |
+| `switch` | Short click-clack | 60ms |
+| `splash` | Filtered water noise | 500ms |
+| `wind` | Sustained modulated noise | 1000ms |
+| `thunder` | Crack + low rumble | 1200ms |
+
+All SEs support `pitch` (0.5–2.0) and `volume` (0.0–1.0) for tuning.
+
+### Jingles — 12 types
+
+| Type | Mood | Waveform |
+|---|---|---|
+| `stage_clear` | Triumphant ascending + fanfare chord | sine |
+| `game_over` | Descending minor with reverb | triangle |
+| `level_up` | Quick ascending pentatonic | sine |
+| `item_get` | Two bright notes | sine |
+| `boss_clear` | Dramatic ascending + power chord | sine |
+| `victory` | Fanfare brass ascending + big chord | sawtooth |
+| `defeat` | Slow descending minor | triangle |
+| `secret_found` | Mysterious chromatic sparkle | sine |
+| `save` | Gentle confirmation chime | sine |
+| `shop_buy` | Cheerful quick ding | square |
+| `danger` | Urgent pulsing alarm (minor 2nd) | square |
+| `unlock` | Bright ascending + shimmer chord | sine |
+
+Tempo feel options: `fast`, `normal`, `slow`, `triumphant`
+
+### Scales — 10 types
+
+| Scale | Intervals | Character |
+|---|---|---|
+| `major` | 0, 2, 4, 5, 7, 9, 11 | Bright, happy |
+| `minor` | 0, 2, 3, 5, 7, 8, 10 | Sad, serious |
+| `pentatonic` | 0, 2, 4, 7, 9 | Simple, universal |
+| `blues` | 0, 3, 5, 6, 7, 10 | Bluesy, soulful |
+| `dorian` | 0, 2, 3, 5, 7, 9, 10 | Jazz, folk |
+| `mixolydian` | 0, 2, 4, 5, 7, 9, 10 | Rock, dominant |
+| `phrygian` | 0, 1, 3, 5, 7, 8, 10 | Spanish, exotic |
+| `lydian` | 0, 2, 4, 6, 7, 9, 11 | Dreamy, bright |
+| `harmonic_minor` | 0, 2, 3, 5, 7, 8, 11 | Dramatic, Eastern |
+| `chromatic` | 0–11 | All semitones |
+
+### Audio Effects — 9 types (via `wav_fx`)
+
+| Effect | Parameters | Use Case |
+|---|---|---|
+| `reverb` | `room_size` (0–1), `wet` (0–1) | Space, depth |
+| `delay` | `delay_ms`, `feedback` (0–1), `wet` (0–1) | Echo, rhythm |
+| `lowpass` | `cutoff_hz` | Muffle, warmth |
+| `highpass` | `cutoff_hz` | Thin, clarity |
+| `bandpass` | `low_hz`, `high_hz` | Telephone, radio |
+| `chorus` | `depth` (0–1), `rate` Hz, `wet` (0–1) | Width, shimmer |
+| `distortion` | `drive` (0–1), `wet` (0–1) | Grit, aggression |
+| `bitcrusher` | `bit_depth` (1–16), `downsample` (1–64) | Lo-fi, retro |
+| `tremolo` | `rate` Hz, `depth` (0–1) | Pulsing, vibrato |
+
+Effects can be chained — they are applied in order.
+
+## Example Prompts
+
+### Basic Generation
+
+```
+Generate a boss battle BGM at 160 BPM in D minor, 8 bars
+```
+
+```
+Create jump and coin sound effects, then play them
+```
+
+```
+Make a victory jingle in G major with triumphant tempo
+```
+
+### Creative Combinations
+
+```
+Generate a cyber BGM at 140 BPM in A harmonic_minor, then apply bitcrusher (8-bit, downsample 4) for retro feel
+```
+
+```
+Create a forest BGM in E lydian at 100 BPM, 16 bars, then add chorus and reverb
+```
+
+```
+Generate explosion, laser, and hit SEs with different pitches, then mix them with offsets into one file
+```
+
+### Workflow: Iterate with Seeds
+
+```
+Generate a dungeon BGM with seed 42 — if you like the melody, keep the same seed and try different scales
+```
+
+The `seed` parameter makes BGM generation deterministic. Same seed + same parameters = same output. Change `key`, `scale`, or `bpm` while keeping the seed to preserve the melody shape.
 
 ## Install
 
@@ -25,17 +197,19 @@ curl -fsSL https://raw.githubusercontent.com/Matuyuhi/16bits-gaudio-mcp/main/ins
 
 ### Build from source
 
+Requires [Zig](https://ziglang.org/download/) 0.15.x.
+
 ```bash
 git clone https://github.com/Matuyuhi/16bits-gaudio-mcp.git
 cd 16bits-gaudio-mcp
-make install   # installs to ~/.local/bin
-```
-
-Or just:
-
-```bash
 zig build
 # binary: zig-out/bin/16bits-audio-mcp
+```
+
+Or:
+
+```bash
+make install   # builds and installs to ~/.local/bin
 ```
 
 ## Configuration
@@ -56,7 +230,7 @@ Add to `~/.claude/settings.json`:
 
 ### Claude Desktop
 
-Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
 
 ```json
 {
@@ -68,7 +242,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 }
 ```
 
-If you built from source, use the full path instead:
+If you built from source, use the full path:
 
 ```json
 {
@@ -80,172 +254,134 @@ If you built from source, use the full path instead:
 }
 ```
 
-## Tools (9 total)
+## Tools Reference (9 tools)
 
 ### bgm_compose
 
 Generate loopable BGM with 4 tracks (melody, bass, harmony, percussion).
 
-| Parameter | Type | Description |
-|---|---|---|
-| output | string | Output WAV file path |
-| style | string | `adventure` / `dungeon` / `boss` / `town` / `battle` |
-| bpm | number | Beats per minute |
-| duration_bars | number | Number of bars |
-| sample_rate | number | Sample rate (e.g. 44100) |
-| key | string | Musical key (e.g. "C", "F#") |
-| scale | string | `major` / `minor` / `pentatonic` / `blues` |
-| seed | number | Random seed for deterministic generation |
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| output | string | yes | Output WAV file path |
+| style | string | yes | One of 15 styles (see above) |
+| bpm | number | yes | Beats per minute |
+| duration_bars | number | yes | Number of bars |
+| sample_rate | number | yes | Sample rate (e.g. 44100) |
+| key | string | yes | Musical key (e.g. "C", "F#", "Bb") |
+| scale | string | yes | One of 10 scales (see above) |
+| seed | number | yes | Random seed for deterministic generation |
 
 ### jingle_gen
 
-Generate short game event jingles (0.8–5 seconds).
+Generate short game event jingles.
 
-| Parameter | Type | Description |
-|---|---|---|
-| output | string | Output WAV file path |
-| type | string | `stage_clear` / `game_over` / `level_up` / `item_get` / `boss_clear` |
-| sample_rate | number | Sample rate |
-| key | string | Musical key |
-| tempo_feel | string | `fast` / `normal` / `triumphant` |
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| output | string | yes | Output WAV file path |
+| type | string | yes | One of 12 jingle types (see above) |
+| sample_rate | number | yes | Sample rate |
+| key | string | yes | Musical key |
+| tempo_feel | string | yes | `fast` / `normal` / `slow` / `triumphant` |
 
 ### se_gen
 
-Generate game sound effects (0.1–1.5 seconds).
+Generate game sound effects.
 
-| Parameter | Type | Description |
-|---|---|---|
-| output | string | Output WAV file path |
-| type | string | `jump` / `hit` / `coin` / `explosion` / `laser` / `powerup` / `error` / `footstep` |
-| pitch | number | Pitch multiplier (1.0 = standard, 0.5 = octave down, 2.0 = octave up) |
-| volume | number | Volume (0.0–1.0) |
-| sample_rate | number | Sample rate |
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| output | string | yes | Output WAV file path |
+| type | string | yes | One of 20 SE types (see above) |
+| pitch | number | yes | Pitch multiplier (0.5–2.0) |
+| volume | number | yes | Volume (0.0–1.0) |
+| sample_rate | number | yes | Sample rate |
 
 ### note_synth
 
-Synthesize single notes or chords to WAV (low-level API).
+Synthesize single notes or chords to WAV.
 
-| Parameter | Type | Description |
-|---|---|---|
-| output | string | Output WAV file path |
-| notes | string[] | Note names (e.g. ["C4", "E4", "G4"]) |
-| waveform | string | `sine` / `square` / `sawtooth` / `triangle` / `pulse` |
-| duration_ms | number | Duration in milliseconds |
-| adsr | object | `{attack_ms, decay_ms, sustain_level, release_ms}` |
-| sample_rate | number | Sample rate |
-| reverb | boolean | Apply reverb |
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| output | string | yes | Output WAV file path |
+| notes | string[] | yes | Note names (e.g. ["C4", "E4", "G4"]) |
+| waveform | string | yes | `sine` / `square` / `sawtooth` / `triangle` / `pulse` |
+| duration_ms | number | yes | Duration in milliseconds |
+| adsr | object | yes | `{attack_ms, decay_ms, sustain_level, release_ms}` |
+| sample_rate | number | yes | Sample rate |
+| reverb | boolean | no | Apply reverb (default: false) |
 
 ### fm_patch
 
 Generate a tone using FM synthesis (YM2612-style 2-operator).
 
-| Parameter | Type | Description |
-|---|---|---|
-| output | string | Output WAV file path |
-| carrier_note | string | Carrier note (e.g. "A2") |
-| modulator_ratio | number | Modulator frequency ratio |
-| modulation_index | number | FM modulation depth |
-| carrier_adsr | object | Carrier ADSR envelope |
-| modulator_adsr | object | Modulator ADSR envelope |
-| duration_ms | number | Duration in milliseconds |
-| sample_rate | number | Sample rate |
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| output | string | yes | Output WAV file path |
+| carrier_note | string | yes | Carrier note (e.g. "A2") |
+| modulator_ratio | number | yes | Modulator frequency ratio |
+| modulation_index | number | yes | FM modulation depth |
+| carrier_adsr | object | yes | Carrier ADSR envelope |
+| modulator_adsr | object | yes | Modulator ADSR envelope |
+| duration_ms | number | yes | Duration in milliseconds |
+| sample_rate | number | yes | Sample rate |
 
 ### wav_fx
 
-Apply effects to an existing WAV file.
+Apply effects chain to an existing WAV file.
 
-| Parameter | Type | Description |
-|---|---|---|
-| input | string | Input WAV file path |
-| output | string | Output WAV file path |
-| effects | object[] | Array of effects |
-
-Effect types:
-- `reverb`: `room_size` (0.0–1.0), `wet` (0.0–1.0)
-- `delay`: `delay_ms`, `feedback` (0.0–0.9), `wet` (0.0–1.0)
-- `lowpass`: `cutoff_hz`
-- `highpass`: `cutoff_hz`
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| input | string | yes | Input WAV file path |
+| output | string | yes | Output WAV file path |
+| effects | object[] | yes | Array of effects (see effect types above) |
 
 ### wav_mix
 
 Mix multiple WAV files into one.
 
-| Parameter | Type | Description |
-|---|---|---|
-| tracks | object[] | `{path, gain, offset_ms}` array |
-| output | string | Output WAV file path |
-| normalize | boolean | Normalize peak to -1 dBFS |
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| tracks | object[] | yes | `{path, gain, offset_ms}` array |
+| output | string | yes | Output WAV file path |
+| normalize | boolean | no | Normalize peak to -1 dBFS |
 
 ### wav_info
 
-Get WAV file metadata and waveform statistics.
+Get WAV file metadata and waveform statistics (sample rate, channels, bit depth, duration, RMS/peak dB).
 
-| Parameter | Type | Description |
-|---|---|---|
-| path | string | WAV file path |
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| path | string | yes | WAV file path |
 
 ### wav_play
 
-Play a WAV file asynchronously (macOS: afplay, Linux: aplay).
+Play a WAV file asynchronously (macOS: `afplay`, Linux: `aplay`).
 
-| Parameter | Type | Description |
-|---|---|---|
-| path | string | WAV file path |
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| path | string | yes | WAV file path |
 
-## Example Prompts
-
-```
-Generate an 8-bar adventure BGM at 140 BPM in C major and play it
-```
-
-```
-Create a stage clear jingle
-```
-
-```
-Generate a jump SE and an explosion SE
-```
-
-```
-Add reverb to the BGM and save it as a separate file
-```
-
-```
-Synthesize a C major chord (C4, E4, G4) with sine wave for 1 second
-```
-
-```
-Create an FM bass sound on A2 with modulator ratio 2.0 and depth 3.0
-```
-
-## Music Theory Reference
-
-### Supported Keys
+## Supported Keys
 
 C, C#, D, D#, E, F, F#, G, G#, A, A#, B (and flats: Db, Eb, Gb, Ab, Bb)
 
-### Scales
+Note range: C0–B9 (MIDI 12–131). A4 = 440 Hz.
 
-| Scale | Semitone offsets |
-|---|---|
-| major | 0, 2, 4, 5, 7, 9, 11 |
-| minor | 0, 2, 3, 5, 7, 8, 10 |
-| pentatonic | 0, 2, 4, 7, 9 |
-| blues | 0, 3, 5, 6, 7, 10 |
+## Tips
 
-### BGM Styles
+- **Seed for iteration**: Use `seed` to lock in a melody you like, then tweak `key`, `scale`, `bpm`, or `style`.
+- **Effect chaining**: Apply multiple effects in sequence — e.g., `bitcrusher` → `reverb` for lo-fi ambient.
+- **Mixing workflow**: Generate individual tracks (BGM, SEs, jingles), then combine with `wav_mix` using `offset_ms` for precise timing.
+- **Pitch shifting SEs**: Use `pitch: 0.5` for heavier sounds, `pitch: 2.0` for lighter/faster variants.
+- **Lo-fi retro sound**: Apply `bitcrusher` (bit_depth: 4–8, downsample: 2–8) to any generated audio.
 
-| Style | Time sig. | Chord progression | BPM range |
-|---|---|---|---|
-| adventure | 4/4 | I–IV–V–I | 120–160 |
-| dungeon | 4/4 | i–VI–VII–i | 80–100 |
-| boss | 4/4 | i–bVII–bVI–V | 140–180 |
-| town | 3/4 | I–V–vi–IV | 90–110 |
-| battle | 4/4 | ii–V–I–VI | 160–200 |
+## Contributing
 
-### Note Range
+Issues and PRs welcome at [Matuyuhi/16bits-gaudio-mcp](https://github.com/Matuyuhi/16bits-gaudio-mcp).
 
-C0–B9 (MIDI 12–131). A4 = 440 Hz.
+```bash
+zig build          # build
+zig fmt src/       # format
+```
 
 ## License
 

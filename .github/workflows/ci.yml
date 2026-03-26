@@ -36,42 +36,170 @@ jobs:
             | ./zig-out/bin/16bits-audio-mcp 2>/dev/null \
             | grep -q '"bgm_compose"'
 
-      - name: Test se_gen
+      # ─── SE: all 20 types ───
+      - name: Test SE - original 8 types
         run: |
-          echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"se_gen","arguments":{"output":"/tmp/test_jump.wav","type":"jump","pitch":1.0,"volume":0.8,"sample_rate":44100}}}' \
+          for se_type in jump hit coin explosion laser powerup error footstep; do
+            echo "{\"jsonrpc\":\"2.0\",\"id\":10,\"method\":\"tools/call\",\"params\":{\"name\":\"se_gen\",\"arguments\":{\"output\":\"/tmp/test_se_${se_type}.wav\",\"type\":\"${se_type}\",\"pitch\":1.0,\"volume\":0.8,\"sample_rate\":44100}}}" \
+              | ./zig-out/bin/16bits-audio-mcp 2>/dev/null \
+              | grep -q '"isError":false' && echo "  ✓ ${se_type}" || { echo "  ✗ ${se_type}"; exit 1; }
+          done
+
+      - name: Test SE - new 12 types
+        run: |
+          for se_type in menu_select menu_cancel dash shield heal charge warp door switch splash wind thunder; do
+            echo "{\"jsonrpc\":\"2.0\",\"id\":11,\"method\":\"tools/call\",\"params\":{\"name\":\"se_gen\",\"arguments\":{\"output\":\"/tmp/test_se_${se_type}.wav\",\"type\":\"${se_type}\",\"pitch\":1.0,\"volume\":0.8,\"sample_rate\":44100}}}" \
+              | ./zig-out/bin/16bits-audio-mcp 2>/dev/null \
+              | grep -q '"isError":false' && echo "  ✓ ${se_type}" || { echo "  ✗ ${se_type}"; exit 1; }
+          done
+
+      - name: Verify SE WAV output
+        run: |
+          file /tmp/test_se_jump.wav | grep -q 'WAVE audio'
+          file /tmp/test_se_thunder.wav | grep -q 'WAVE audio'
+
+      # ─── BGM: all 15 styles ───
+      - name: Test BGM - original 5 styles
+        run: |
+          for style in adventure dungeon boss town battle; do
+            echo "{\"jsonrpc\":\"2.0\",\"id\":20,\"method\":\"tools/call\",\"params\":{\"name\":\"bgm_compose\",\"arguments\":{\"output\":\"/tmp/test_bgm_${style}.wav\",\"style\":\"${style}\",\"bpm\":120,\"duration_bars\":2,\"sample_rate\":44100,\"key\":\"C\",\"scale\":\"major\",\"seed\":42}}}" \
+              | ./zig-out/bin/16bits-audio-mcp 2>/dev/null \
+              | grep -q '"isError":false' && echo "  ✓ ${style}" || { echo "  ✗ ${style}"; exit 1; }
+          done
+
+      - name: Test BGM - new 10 styles
+        run: |
+          for style in field puzzle menu horror space shop castle underwater forest cyber; do
+            echo "{\"jsonrpc\":\"2.0\",\"id\":21,\"method\":\"tools/call\",\"params\":{\"name\":\"bgm_compose\",\"arguments\":{\"output\":\"/tmp/test_bgm_${style}.wav\",\"style\":\"${style}\",\"bpm\":120,\"duration_bars\":2,\"sample_rate\":44100,\"key\":\"A\",\"scale\":\"minor\",\"seed\":99}}}" \
+              | ./zig-out/bin/16bits-audio-mcp 2>/dev/null \
+              | grep -q '"isError":false' && echo "  ✓ ${style}" || { echo "  ✗ ${style}"; exit 1; }
+          done
+
+      - name: Verify BGM WAV output
+        run: |
+          file /tmp/test_bgm_adventure.wav | grep -q 'WAVE audio'
+          file /tmp/test_bgm_cyber.wav | grep -q 'WAVE audio'
+
+      # ─── BGM: all 10 scales ───
+      - name: Test BGM - all scales
+        run: |
+          for scale in major minor pentatonic blues dorian mixolydian phrygian lydian harmonic_minor chromatic; do
+            echo "{\"jsonrpc\":\"2.0\",\"id\":22,\"method\":\"tools/call\",\"params\":{\"name\":\"bgm_compose\",\"arguments\":{\"output\":\"/tmp/test_scale_${scale}.wav\",\"style\":\"adventure\",\"bpm\":120,\"duration_bars\":2,\"sample_rate\":44100,\"key\":\"D\",\"scale\":\"${scale}\",\"seed\":1}}}" \
+              | ./zig-out/bin/16bits-audio-mcp 2>/dev/null \
+              | grep -q '"isError":false' && echo "  ✓ ${scale}" || { echo "  ✗ ${scale}"; exit 1; }
+          done
+
+      # ─── Jingle: all 12 types ───
+      - name: Test Jingle - original 5 types
+        run: |
+          for jtype in stage_clear game_over level_up item_get boss_clear; do
+            echo "{\"jsonrpc\":\"2.0\",\"id\":30,\"method\":\"tools/call\",\"params\":{\"name\":\"jingle_gen\",\"arguments\":{\"output\":\"/tmp/test_jingle_${jtype}.wav\",\"type\":\"${jtype}\",\"sample_rate\":44100,\"key\":\"C\",\"tempo_feel\":\"normal\"}}}" \
+              | ./zig-out/bin/16bits-audio-mcp 2>/dev/null \
+              | grep -q '"isError":false' && echo "  ✓ ${jtype}" || { echo "  ✗ ${jtype}"; exit 1; }
+          done
+
+      - name: Test Jingle - new 7 types
+        run: |
+          for jtype in victory defeat secret_found save shop_buy danger unlock; do
+            echo "{\"jsonrpc\":\"2.0\",\"id\":31,\"method\":\"tools/call\",\"params\":{\"name\":\"jingle_gen\",\"arguments\":{\"output\":\"/tmp/test_jingle_${jtype}.wav\",\"type\":\"${jtype}\",\"sample_rate\":44100,\"key\":\"G\",\"tempo_feel\":\"triumphant\"}}}" \
+              | ./zig-out/bin/16bits-audio-mcp 2>/dev/null \
+              | grep -q '"isError":false' && echo "  ✓ ${jtype}" || { echo "  ✗ ${jtype}"; exit 1; }
+          done
+
+      - name: Verify Jingle WAV output
+        run: |
+          file /tmp/test_jingle_stage_clear.wav | grep -q 'WAVE audio'
+          file /tmp/test_jingle_victory.wav | grep -q 'WAVE audio'
+
+      # ─── Jingle: all tempo feels ───
+      - name: Test Jingle - all tempo feels
+        run: |
+          for feel in fast normal slow triumphant; do
+            echo "{\"jsonrpc\":\"2.0\",\"id\":32,\"method\":\"tools/call\",\"params\":{\"name\":\"jingle_gen\",\"arguments\":{\"output\":\"/tmp/test_feel_${feel}.wav\",\"type\":\"level_up\",\"sample_rate\":44100,\"key\":\"C\",\"tempo_feel\":\"${feel}\"}}}" \
+              | ./zig-out/bin/16bits-audio-mcp 2>/dev/null \
+              | grep -q '"isError":false' && echo "  ✓ ${feel}" || { echo "  ✗ ${feel}"; exit 1; }
+          done
+
+      # ─── Effects: all 9 types ───
+      - name: Test wav_fx - reverb + delay
+        run: |
+          echo '{"jsonrpc":"2.0","id":40,"method":"tools/call","params":{"name":"wav_fx","arguments":{"input":"/tmp/test_bgm_adventure.wav","output":"/tmp/test_fx_reverb.wav","effects":[{"type":"reverb","room_size":0.7,"wet":0.4},{"type":"delay","delay_ms":200,"feedback":0.3,"wet":0.2}]}}}' \
             | ./zig-out/bin/16bits-audio-mcp 2>/dev/null \
             | grep -q '"isError":false'
-          file /tmp/test_jump.wav | grep -q 'WAVE audio'
 
-      - name: Test bgm_compose
+      - name: Test wav_fx - filters (lowpass, highpass, bandpass)
         run: |
-          echo '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"bgm_compose","arguments":{"output":"/tmp/test_bgm.wav","style":"adventure","bpm":140,"duration_bars":4,"sample_rate":44100,"key":"C","scale":"major","seed":42}}}' \
+          echo '{"jsonrpc":"2.0","id":41,"method":"tools/call","params":{"name":"wav_fx","arguments":{"input":"/tmp/test_bgm_adventure.wav","output":"/tmp/test_fx_filters.wav","effects":[{"type":"lowpass","cutoff_hz":2000},{"type":"highpass","cutoff_hz":200},{"type":"bandpass","low_hz":300,"high_hz":3000}]}}}' \
             | ./zig-out/bin/16bits-audio-mcp 2>/dev/null \
             | grep -q '"isError":false'
-          file /tmp/test_bgm.wav | grep -q 'WAVE audio'
 
-      - name: Test jingle_gen
+      - name: Test wav_fx - chorus + distortion
         run: |
-          echo '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"jingle_gen","arguments":{"output":"/tmp/test_clear.wav","type":"stage_clear","sample_rate":44100,"key":"C","tempo_feel":"triumphant"}}}' \
+          echo '{"jsonrpc":"2.0","id":42,"method":"tools/call","params":{"name":"wav_fx","arguments":{"input":"/tmp/test_bgm_adventure.wav","output":"/tmp/test_fx_chorus.wav","effects":[{"type":"chorus","depth":0.5,"rate":1.5,"wet":0.3},{"type":"distortion","drive":0.4,"wet":0.6}]}}}' \
             | ./zig-out/bin/16bits-audio-mcp 2>/dev/null \
             | grep -q '"isError":false'
-          file /tmp/test_clear.wav | grep -q 'WAVE audio'
 
+      - name: Test wav_fx - bitcrusher + tremolo
+        run: |
+          echo '{"jsonrpc":"2.0","id":43,"method":"tools/call","params":{"name":"wav_fx","arguments":{"input":"/tmp/test_bgm_adventure.wav","output":"/tmp/test_fx_lofi.wav","effects":[{"type":"bitcrusher","bit_depth":8,"downsample":4},{"type":"tremolo","rate":5.0,"depth":0.6}]}}}' \
+            | ./zig-out/bin/16bits-audio-mcp 2>/dev/null \
+            | grep -q '"isError":false'
+
+      - name: Verify fx WAV output
+        run: |
+          file /tmp/test_fx_reverb.wav | grep -q 'WAVE audio'
+          file /tmp/test_fx_lofi.wav | grep -q 'WAVE audio'
+
+      # ─── Other tools ───
       - name: Test wav_info
         run: |
-          echo '{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"wav_info","arguments":{"path":"/tmp/test_bgm.wav"}}}' \
+          echo '{"jsonrpc":"2.0","id":50,"method":"tools/call","params":{"name":"wav_info","arguments":{"path":"/tmp/test_bgm_adventure.wav"}}}' \
             | ./zig-out/bin/16bits-audio-mcp 2>/dev/null \
             | grep -q '"isError":false'
 
-      - name: Test wav_fx
+      - name: Test wav_mix
         run: |
-          echo '{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"wav_fx","arguments":{"input":"/tmp/test_bgm.wav","output":"/tmp/test_bgm_reverb.wav","effects":[{"type":"reverb","room_size":0.7,"wet":0.4}]}}}' \
+          echo '{"jsonrpc":"2.0","id":51,"method":"tools/call","params":{"name":"wav_mix","arguments":{"tracks":[{"path":"/tmp/test_se_jump.wav","gain":1.0,"offset_ms":0},{"path":"/tmp/test_se_coin.wav","gain":0.8,"offset_ms":200}],"output":"/tmp/test_mixed.wav","normalize":true}}}' \
             | ./zig-out/bin/16bits-audio-mcp 2>/dev/null \
             | grep -q '"isError":false'
-          file /tmp/test_bgm_reverb.wav | grep -q 'WAVE audio'
+          file /tmp/test_mixed.wav | grep -q 'WAVE audio'
 
-      - name: Test error handling
+      - name: Test note_synth
         run: |
-          echo '{"jsonrpc":"2.0","id":8,"method":"unknown_method","params":{}}' \
+          echo '{"jsonrpc":"2.0","id":52,"method":"tools/call","params":{"name":"note_synth","arguments":{"output":"/tmp/test_chord.wav","notes":["C4","E4","G4"],"waveform":"sine","duration_ms":500,"adsr":{"attack_ms":10,"decay_ms":50,"sustain_level":0.7,"release_ms":100},"sample_rate":44100,"reverb":true}}}' \
+            | ./zig-out/bin/16bits-audio-mcp 2>/dev/null \
+            | grep -q '"isError":false'
+
+      - name: Test fm_patch
+        run: |
+          echo '{"jsonrpc":"2.0","id":53,"method":"tools/call","params":{"name":"fm_patch","arguments":{"output":"/tmp/test_fm.wav","carrier_note":"A2","modulator_ratio":2.0,"modulation_index":3.0,"carrier_adsr":{"attack_ms":10,"decay_ms":50,"sustain_level":0.7,"release_ms":100},"modulator_adsr":{"attack_ms":5,"decay_ms":30,"sustain_level":0.5,"release_ms":80},"duration_ms":500,"sample_rate":44100}}}' \
+            | ./zig-out/bin/16bits-audio-mcp 2>/dev/null \
+            | grep -q '"isError":false'
+
+      # ─── Seed determinism ───
+      - name: Test seed determinism
+        run: |
+          echo '{"jsonrpc":"2.0","id":60,"method":"tools/call","params":{"name":"bgm_compose","arguments":{"output":"/tmp/test_seed_a.wav","style":"adventure","bpm":120,"duration_bars":2,"sample_rate":44100,"key":"C","scale":"major","seed":12345}}}' \
+            | ./zig-out/bin/16bits-audio-mcp 2>/dev/null > /dev/null
+          echo '{"jsonrpc":"2.0","id":61,"method":"tools/call","params":{"name":"bgm_compose","arguments":{"output":"/tmp/test_seed_b.wav","style":"adventure","bpm":120,"duration_bars":2,"sample_rate":44100,"key":"C","scale":"major","seed":12345}}}' \
+            | ./zig-out/bin/16bits-audio-mcp 2>/dev/null > /dev/null
+          diff /tmp/test_seed_a.wav /tmp/test_seed_b.wav
+
+      # ─── Error handling ───
+      - name: Test error - unknown method
+        run: |
+          echo '{"jsonrpc":"2.0","id":70,"method":"unknown_method","params":{}}' \
             | ./zig-out/bin/16bits-audio-mcp 2>/dev/null \
             | grep -q '"code":-32601'
+
+      - name: Test error - unknown SE type
+        run: |
+          echo '{"jsonrpc":"2.0","id":71,"method":"tools/call","params":{"name":"se_gen","arguments":{"output":"/tmp/bad.wav","type":"nonexistent","pitch":1.0,"volume":0.8,"sample_rate":44100}}}' \
+            | ./zig-out/bin/16bits-audio-mcp 2>/dev/null \
+            | grep -q '"isError":true'
+
+      - name: Test error - unknown BGM style
+        run: |
+          echo '{"jsonrpc":"2.0","id":72,"method":"tools/call","params":{"name":"bgm_compose","arguments":{"output":"/tmp/bad.wav","style":"nonexistent","bpm":120,"duration_bars":2,"sample_rate":44100,"key":"C","scale":"major","seed":1}}}' \
+            | ./zig-out/bin/16bits-audio-mcp 2>/dev/null \
+            | grep -q '"isError":true'

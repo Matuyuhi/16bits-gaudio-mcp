@@ -39,13 +39,13 @@ src/
     ├── envelope.zig      # ADSRエンベロープ
     ├── fm.zig            # FM合成（2オペレータ）
     ├── filter.zig        # ローパス/ハイパス/バンドパスフィルタ
-    ├── effects.zig       # シュローダーリバーブ・ディレイ
-    ├── sequencer.zig     # 音楽理論（ノート→Hz、スケール、コード進行）
+    ├── effects.zig       # リバーブ・ディレイ・コーラス・ディストーション・ビットクラッシャー・トレモロ
+    ├── sequencer.zig     # 音楽理論（ノート→Hz、10スケール、7コード、15スタイル進行）
     ├── mixer.zig         # マルチトラックミキシング・ノーマライズ・クロスフェード
     └── generators/
-        ├── bgm.zig       # BGM生成（4トラック構成）
-        ├── jingle.zig    # ジングル生成
-        └── se.zig        # SE生成
+        ├── bgm.zig       # BGM生成（15スタイル、スタイル別音色・リズムパラメータ）
+        ├── jingle.zig    # ジングル生成（12タイプ）
+        └── se.zig        # SE生成（20タイプ）
 ```
 
 ## 重要な設計方針
