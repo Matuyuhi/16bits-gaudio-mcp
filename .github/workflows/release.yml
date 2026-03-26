@@ -22,7 +22,7 @@ jobs:
       new_version: ${{ steps.bump.outputs.new_version }}
       tag: ${{ steps.bump.outputs.tag }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -88,12 +88,12 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: v${{ needs.bump.outputs.new_version }}
 
       - name: Setup Zig
-        uses: goto-bus-stop/setup-zig@v2
+        uses: mlugg/setup-zig@v2.2.1
         with:
           version: 0.15.2
 
@@ -107,7 +107,7 @@ jobs:
           cd dist && tar czf ${{ matrix.artifact }}.tar.gz 16bits-audio-mcp
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.artifact }}
           path: dist/${{ matrix.artifact }}.tar.gz
@@ -116,12 +116,12 @@ jobs:
     needs: [bump, build]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: v${{ needs.bump.outputs.new_version }}
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: artifacts
 
@@ -137,7 +137,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: artifacts
 
@@ -150,7 +150,7 @@ jobs:
           echo "aarch64_linux=$(sha256sum artifacts/16bits-audio-mcp-aarch64-linux/16bits-audio-mcp-aarch64-linux.tar.gz | awk '{print $1}')" >> "$GITHUB_OUTPUT"
 
       - name: Checkout Homebrew tap
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: Matuyuhi/homebrew-tools
           token: ${{ secrets.TAP_GITHUB_TOKEN }}
