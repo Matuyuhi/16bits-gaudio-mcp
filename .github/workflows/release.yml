@@ -73,16 +73,16 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: macos-latest
+          - os: macos-15
             target: aarch64-macos
             artifact: 16bits-audio-mcp-aarch64-apple-darwin
-          - os: macos-13
+          - os: macos-15-intel
             target: x86_64-macos
             artifact: 16bits-audio-mcp-x86_64-apple-darwin
-          - os: ubuntu-latest
+          - os: ubuntu-slim
             target: x86_64-linux
             artifact: 16bits-audio-mcp-x86_64-linux
-          - os: ubuntu-latest
+          - os: ubuntu-24.04-arm
             target: aarch64-linux
             artifact: 16bits-audio-mcp-aarch64-linux
     runs-on: ${{ matrix.os }}
