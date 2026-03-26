@@ -2,9 +2,6 @@ const std = @import("std");
 const protocol = @import("protocol.zig");
 const tools = @import("tools.zig");
 
-const IoReader = std.io.Reader;
-const IoWriter = std.io.Writer;
-
 pub fn run(allocator: std.mem.Allocator) !void {
     const stdin_file = std.fs.File.stdin();
     const stdout_file = std.fs.File.stdout();
@@ -13,12 +10,7 @@ pub fn run(allocator: std.mem.Allocator) !void {
     const read_buf = try allocator.alloc(u8, 1024 * 1024);
     defer allocator.free(read_buf);
 
-    // Allocate write buffer
-    const write_buf = try allocator.alloc(u8, 65536);
-    defer allocator.free(write_buf);
-
     var file_reader = stdin_file.readerStreaming(read_buf);
-    var file_writer = stdout_file.writerStreaming(write_buf);
 
     std.debug.print("16bits-audio-mcp: server started, waiting for input...\n", .{});
 
@@ -40,41 +32,43 @@ pub fn run(allocator: std.mem.Allocator) !void {
         const line_copy = allocator.dupe(u8, trimmed) catch continue;
         defer allocator.free(line_copy);
 
-        processLine(allocator, line_copy, &file_writer.interface) catch |err| {
+        // Build response into a buffer, then write all at once to stdout
+        const response = processLine(allocator, line_copy) catch |err| {
             std.debug.print("16bits-audio-mcp: process error: {}\n", .{err});
-        };
+            continue;
+        } orelse continue; // notification, no response
+        defer allocator.free(response);
 
-        file_writer.interface.flush() catch {};
+        _ = stdout_file.write(response) catch |err| {
+            std.debug.print("16bits-audio-mcp: write error: {}\n", .{err});
+        };
     }
 
     std.debug.print("16bits-audio-mcp: server shutting down\n", .{});
 }
 
-fn processLine(allocator: std.mem.Allocator, line: []const u8, writer: *IoWriter) !void {
+/// Process a JSON-RPC line. Returns allocated response string, or null for notifications.
+fn processLine(allocator: std.mem.Allocator, line: []const u8) !?[]const u8 {
     // Parse JSON
     var parsed = std.json.parseFromSlice(std.json.Value, allocator, line, .{}) catch {
-        try protocol.writeJsonRpcError(writer, "null", -32700, "Parse error");
-        return;
+        return try protocol.buildJsonRpcError(allocator, "null", -32700, "Parse error");
     };
     defer parsed.deinit();
 
     const root = switch (parsed.value) {
         .object => |o| o,
         else => {
-            try protocol.writeJsonRpcError(writer, "null", -32600, "Invalid Request");
-            return;
+            return try protocol.buildJsonRpcError(allocator, "null", -32600, "Invalid Request");
         },
     };
 
     // Get method
     const method = switch (root.get("method") orelse {
-        try protocol.writeJsonRpcError(writer, "null", -32600, "Invalid Request: missing method");
-        return;
+        return try protocol.buildJsonRpcError(allocator, "null", -32600, "Invalid Request: missing method");
     }) {
         .string => |s| s,
         else => {
-            try protocol.writeJsonRpcError(writer, "null", -32600, "Invalid Request: method must be string");
-            return;
+            return try protocol.buildJsonRpcError(allocator, "null", -32600, "Invalid Request: method must be string");
         },
     };
 
@@ -85,52 +79,46 @@ fn processLine(allocator: std.mem.Allocator, line: []const u8, writer: *IoWriter
     // Handle notifications (no response needed)
     if (std.mem.startsWith(u8, method, "notifications/")) {
         std.debug.print("16bits-audio-mcp: notification: {s}\n", .{method});
-        return;
+        return null;
     }
 
     // Dispatch method
     if (std.mem.eql(u8, method, "initialize")) {
-        try protocol.writeInitializeResult(writer, id_json);
+        return try protocol.buildInitializeResult(allocator, id_json);
     } else if (std.mem.eql(u8, method, "tools/list")) {
-        try protocol.writeJsonRpcResult(writer, id_json, tools.tools_list_json);
+        return try protocol.buildJsonRpcResult(allocator, id_json, tools.tools_list_json);
     } else if (std.mem.eql(u8, method, "tools/call")) {
-        try handleToolsCall(allocator, writer, id_json, root.get("params"));
+        return try handleToolsCall(allocator, id_json, root.get("params"));
     } else {
-        try protocol.writeJsonRpcError(writer, id_json, -32601, "Method not found");
+        return try protocol.buildJsonRpcError(allocator, id_json, -32601, "Method not found");
     }
 }
 
-fn handleToolsCall(allocator: std.mem.Allocator, writer: *IoWriter, id_json: []const u8, params_val: ?std.json.Value) !void {
+fn handleToolsCall(allocator: std.mem.Allocator, id_json: []const u8, params_val: ?std.json.Value) ![]const u8 {
     const params = switch (params_val orelse {
-        try protocol.writeToolResult(writer, id_json, "Error: missing params", true);
-        return;
+        return try protocol.buildToolResult(allocator, id_json, "Error: missing params", true);
     }) {
         .object => |o| o,
         else => {
-            try protocol.writeToolResult(writer, id_json, "Error: params must be object", true);
-            return;
+            return try protocol.buildToolResult(allocator, id_json, "Error: params must be object", true);
         },
     };
 
     const tool_name = switch (params.get("name") orelse {
-        try protocol.writeToolResult(writer, id_json, "Error: missing tool name", true);
-        return;
+        return try protocol.buildToolResult(allocator, id_json, "Error: missing tool name", true);
     }) {
         .string => |s| s,
         else => {
-            try protocol.writeToolResult(writer, id_json, "Error: tool name must be string", true);
-            return;
+            return try protocol.buildToolResult(allocator, id_json, "Error: tool name must be string", true);
         },
     };
 
     const arguments = switch (params.get("arguments") orelse {
-        try protocol.writeToolResult(writer, id_json, "Error: missing arguments", true);
-        return;
+        return try protocol.buildToolResult(allocator, id_json, "Error: missing arguments", true);
     }) {
         .object => |o| o,
         else => {
-            try protocol.writeToolResult(writer, id_json, "Error: arguments must be object", true);
-            return;
+            return try protocol.buildToolResult(allocator, id_json, "Error: arguments must be object", true);
         },
     };
 
@@ -154,10 +142,9 @@ fn handleToolsCall(allocator: std.mem.Allocator, writer: *IoWriter, id_json: []c
             else => try std.fmt.allocPrint(allocator, "Error: {}", .{err}),
         };
         defer allocator.free(err_msg);
-        try protocol.writeToolResult(writer, id_json, err_msg, true);
-        return;
+        return try protocol.buildToolResult(allocator, id_json, err_msg, true);
     };
     defer allocator.free(result);
 
-    try protocol.writeToolResult(writer, id_json, result, false);
+    return try protocol.buildToolResult(allocator, id_json, result, false);
 }

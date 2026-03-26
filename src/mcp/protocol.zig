@@ -1,32 +1,27 @@
 const std = @import("std");
 
-const IoWriter = std.io.Writer;
-
-/// Write a JSON-escaped string (without surrounding quotes)
-fn writeJsonStringContent(writer: *IoWriter, s: []const u8) !void {
+/// Append a JSON-escaped string (with surrounding quotes) to the list
+fn appendJsonString(list: *std.ArrayList(u8), allocator: std.mem.Allocator, s: []const u8) !void {
+    try list.append(allocator, '"');
     for (s) |c| {
         switch (c) {
-            '"' => try writer.writeAll("\\\""),
-            '\\' => try writer.writeAll("\\\\"),
-            '\n' => try writer.writeAll("\\n"),
-            '\r' => try writer.writeAll("\\r"),
-            '\t' => try writer.writeAll("\\t"),
+            '"' => try list.appendSlice(allocator, "\\\""),
+            '\\' => try list.appendSlice(allocator, "\\\\"),
+            '\n' => try list.appendSlice(allocator, "\\n"),
+            '\r' => try list.appendSlice(allocator, "\\r"),
+            '\t' => try list.appendSlice(allocator, "\\t"),
             else => {
                 if (c < 0x20) {
-                    try writer.print("\\u{x:0>4}", .{@as(u16, c)});
+                    var buf: [6]u8 = undefined;
+                    const hex = std.fmt.bufPrint(&buf, "\\u{x:0>4}", .{@as(u16, c)}) catch continue;
+                    try list.appendSlice(allocator, hex);
                 } else {
-                    try writer.writeByte(c);
+                    try list.append(allocator, c);
                 }
             },
         }
     }
-}
-
-/// Write a JSON string with surrounding quotes
-fn writeJsonString(writer: *IoWriter, s: []const u8) !void {
-    try writer.writeByte('"');
-    try writeJsonStringContent(writer, s);
-    try writer.writeByte('"');
+    try list.append(allocator, '"');
 }
 
 /// Convert a JSON Value representing an id to its JSON text representation.
@@ -64,44 +59,61 @@ pub fn formatId(value: ?std.json.Value, buf: []u8) []const u8 {
     }
 }
 
-/// Write JSON-RPC error response
-pub fn writeJsonRpcError(writer: *IoWriter, id_json: []const u8, code: i32, message: []const u8) !void {
-    try writer.writeAll("{\"jsonrpc\":\"2.0\",\"id\":");
-    try writer.writeAll(id_json);
-    try writer.writeAll(",\"error\":{\"code\":");
-    try writer.print("{d}", .{code});
-    try writer.writeAll(",\"message\":");
-    try writeJsonString(writer, message);
-    try writer.writeAll("}}\n");
+/// Build JSON-RPC error response as an allocated string
+pub fn buildJsonRpcError(allocator: std.mem.Allocator, id_json: []const u8, code: i32, message: []const u8) ![]const u8 {
+    var list: std.ArrayList(u8) = .empty;
+    defer list.deinit(allocator);
+
+    try list.appendSlice(allocator, "{\"jsonrpc\":\"2.0\",\"id\":");
+    try list.appendSlice(allocator, id_json);
+    try list.appendSlice(allocator, ",\"error\":{\"code\":");
+    var code_buf: [16]u8 = undefined;
+    const code_str = std.fmt.bufPrint(&code_buf, "{d}", .{code}) catch "0";
+    try list.appendSlice(allocator, code_str);
+    try list.appendSlice(allocator, ",\"message\":");
+    try appendJsonString(&list, allocator, message);
+    try list.appendSlice(allocator, "}}\n");
+
+    return try allocator.dupe(u8, list.items);
 }
 
-/// Write JSON-RPC success response with a raw JSON result
-pub fn writeJsonRpcResult(writer: *IoWriter, id_json: []const u8, result_json: []const u8) !void {
-    try writer.writeAll("{\"jsonrpc\":\"2.0\",\"id\":");
-    try writer.writeAll(id_json);
-    try writer.writeAll(",\"result\":");
-    try writer.writeAll(result_json);
-    try writer.writeAll("}\n");
+/// Build JSON-RPC success response with a raw JSON result
+pub fn buildJsonRpcResult(allocator: std.mem.Allocator, id_json: []const u8, result_json: []const u8) ![]const u8 {
+    var list: std.ArrayList(u8) = .empty;
+    defer list.deinit(allocator);
+
+    try list.appendSlice(allocator, "{\"jsonrpc\":\"2.0\",\"id\":");
+    try list.appendSlice(allocator, id_json);
+    try list.appendSlice(allocator, ",\"result\":");
+    try list.appendSlice(allocator, result_json);
+    try list.appendSlice(allocator, "}\n");
+
+    return try allocator.dupe(u8, list.items);
 }
 
-/// Write MCP tool result (success or error)
-pub fn writeToolResult(writer: *IoWriter, id_json: []const u8, text: []const u8, is_error: bool) !void {
-    try writer.writeAll("{\"jsonrpc\":\"2.0\",\"id\":");
-    try writer.writeAll(id_json);
-    try writer.writeAll(",\"result\":{\"content\":[{\"type\":\"text\",\"text\":");
-    try writeJsonString(writer, text);
-    try writer.writeAll("}],\"isError\":");
+/// Build MCP tool result (success or error) as an allocated string
+pub fn buildToolResult(allocator: std.mem.Allocator, id_json: []const u8, text: []const u8, is_error: bool) ![]const u8 {
+    var list: std.ArrayList(u8) = .empty;
+    defer list.deinit(allocator);
+
+    try list.appendSlice(allocator, "{\"jsonrpc\":\"2.0\",\"id\":");
+    try list.appendSlice(allocator, id_json);
+    try list.appendSlice(allocator, ",\"result\":{\"content\":[{\"type\":\"text\",\"text\":");
+    try appendJsonString(&list, allocator, text);
+    try list.appendSlice(allocator, "}],\"isError\":");
     if (is_error) {
-        try writer.writeAll("true");
+        try list.appendSlice(allocator, "true");
     } else {
-        try writer.writeAll("false");
+        try list.appendSlice(allocator, "false");
     }
-    try writer.writeAll("}}\n");
+    try list.appendSlice(allocator, "}}\n");
+
+    return try allocator.dupe(u8, list.items);
 }
 
-/// Write the initialize response
-pub fn writeInitializeResult(writer: *IoWriter, id_json: []const u8) !void {
-    try writeJsonRpcResult(writer, id_json,
+/// Build the initialize response
+pub fn buildInitializeResult(allocator: std.mem.Allocator, id_json: []const u8) ![]const u8 {
+    return try buildJsonRpcResult(allocator, id_json,
         \\{"protocolVersion":"2024-11-05","capabilities":{"tools":{}},"serverInfo":{"name":"16bits-audio-mcp","version":"0.3.1"}}
     );
 }
