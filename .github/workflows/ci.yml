@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Zig
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.15.2
+
+      - name: Build
+        run: zig build
+
+      - name: Test initialize
+        run: |
+          echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{}}}' \
+            | ./zig-out/bin/16bits-audio-mcp 2>/dev/null \
+            | grep -q '"protocolVersion":"2024-11-05"'
+
+      - name: Test tools/list
+        run: |
+          echo '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
+            | ./zig-out/bin/16bits-audio-mcp 2>/dev/null \
+            | grep -q '"bgm_compose"'
+
+      - name: Test se_gen
+        run: |
+          echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"se_gen","arguments":{"output":"/tmp/test_jump.wav","type":"jump","pitch":1.0,"volume":0.8,"sample_rate":44100}}}' \
+            | ./zig-out/bin/16bits-audio-mcp 2>/dev/null \
+            | grep -q '"isError":false'
+          file /tmp/test_jump.wav | grep -q 'WAVE audio'
+
+      - name: Test bgm_compose
+        run: |
+          echo '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"bgm_compose","arguments":{"output":"/tmp/test_bgm.wav","style":"adventure","bpm":140,"duration_bars":4,"sample_rate":44100,"key":"C","scale":"major","seed":42}}}' \
+            | ./zig-out/bin/16bits-audio-mcp 2>/dev/null \
+            | grep -q '"isError":false'
+          file /tmp/test_bgm.wav | grep -q 'WAVE audio'
+
+      - name: Test jingle_gen
+        run: |
+          echo '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"jingle_gen","arguments":{"output":"/tmp/test_clear.wav","type":"stage_clear","sample_rate":44100,"key":"C","tempo_feel":"triumphant"}}}' \
+            | ./zig-out/bin/16bits-audio-mcp 2>/dev/null \
+            | grep -q '"isError":false'
+          file /tmp/test_clear.wav | grep -q 'WAVE audio'
+
+      - name: Test wav_info
+        run: |
+          echo '{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"wav_info","arguments":{"path":"/tmp/test_bgm.wav"}}}' \
+            | ./zig-out/bin/16bits-audio-mcp 2>/dev/null \
+            | grep -q '"isError":false'
+
+      - name: Test wav_fx
+        run: |
+          echo '{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"wav_fx","arguments":{"input":"/tmp/test_bgm.wav","output":"/tmp/test_bgm_reverb.wav","effects":[{"type":"reverb","room_size":0.7,"wet":0.4}]}}}' \
+            | ./zig-out/bin/16bits-audio-mcp 2>/dev/null \
+            | grep -q '"isError":false'
+          file /tmp/test_bgm_reverb.wav | grep -q 'WAVE audio'
+
+      - name: Test error handling
+        run: |
+          echo '{"jsonrpc":"2.0","id":8,"method":"unknown_method","params":{}}' \
+            | ./zig-out/bin/16bits-audio-mcp 2>/dev/null \
+            | grep -q '"code":-32601'

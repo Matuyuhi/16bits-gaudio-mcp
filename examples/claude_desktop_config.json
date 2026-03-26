@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "16bits-audio": {
+      "command": "/path/to/16bits-audio-mcp/zig-out/bin/16bits-audio-mcp"
+    }
+  }
+}
