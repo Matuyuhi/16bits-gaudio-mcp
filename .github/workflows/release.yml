@@ -1,15 +1,75 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump type"
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
 
 permissions:
   contents: write
 
 jobs:
+  bump:
+    runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.bump.outputs.new_version }}
+      tag: ${{ steps.bump.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get current version
+        id: current
+        run: |
+          version=$(grep -oP '\.version\s*=\s*"\K[^"]+' build.zig.zon)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Current version: $version"
+
+      - name: Compute new version
+        id: bump
+        run: |
+          IFS='.' read -r major minor patch <<< "${{ steps.current.outputs.version }}"
+          case "${{ inputs.bump }}" in
+            major) major=$((major + 1)); minor=0; patch=0 ;;
+            minor) minor=$((minor + 1)); patch=0 ;;
+            patch) patch=$((patch + 1)) ;;
+          esac
+          new_version="${major}.${minor}.${patch}"
+          echo "new_version=$new_version" >> "$GITHUB_OUTPUT"
+          echo "tag=v${new_version}" >> "$GITHUB_OUTPUT"
+          echo "New version: $new_version"
+
+      - name: Update build.zig.zon
+        run: |
+          sed -i 's/\.version = ".*"/\.version = "${{ steps.bump.outputs.new_version }}"/' build.zig.zon
+
+      - name: Update protocol.zig (serverInfo version)
+        run: |
+          sed -i 's/"version":"[0-9]*\.[0-9]*\.[0-9]*"/"version":"${{ steps.bump.outputs.new_version }}"/' src/mcp/protocol.zig
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add build.zig.zon src/mcp/protocol.zig
+          git commit -m "Bump version to v${{ steps.bump.outputs.new_version }}"
+          git push
+
+      - name: Create and push tag
+        run: |
+          git tag "v${{ steps.bump.outputs.new_version }}"
+          git push origin "v${{ steps.bump.outputs.new_version }}"
+
   build:
+    needs: bump
     strategy:
       matrix:
         include:
@@ -29,6 +89,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: v${{ needs.bump.outputs.new_version }}
 
       - name: Setup Zig
         uses: goto-bus-stop/setup-zig@v2
@@ -51,10 +113,12 @@ jobs:
           path: dist/${{ matrix.artifact }}.tar.gz
 
   release:
-    needs: build
+    needs: [bump, build]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: v${{ needs.bump.outputs.new_version }}
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -64,11 +128,12 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ needs.bump.outputs.new_version }}
           generate_release_notes: true
           files: artifacts/**/*.tar.gz
 
   update-formula:
-    needs: release
+    needs: [bump, build, release]
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
@@ -84,10 +149,6 @@ jobs:
           echo "x86_64_linux=$(sha256sum artifacts/16bits-audio-mcp-x86_64-linux/16bits-audio-mcp-x86_64-linux.tar.gz | awk '{print $1}')" >> "$GITHUB_OUTPUT"
           echo "aarch64_linux=$(sha256sum artifacts/16bits-audio-mcp-aarch64-linux/16bits-audio-mcp-aarch64-linux.tar.gz | awk '{print $1}')" >> "$GITHUB_OUTPUT"
 
-      - name: Extract version
-        id: version
-        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
-
       - name: Checkout Homebrew tap
         uses: actions/checkout@v4
         with:
@@ -101,7 +162,7 @@ jobs:
           ruby -i -pe '
             @sha_count ||= 0
             if $_ =~ /version\s+".*"/
-              $_.sub!(/".*"/, "\"${{ steps.version.outputs.version }}\"")
+              $_.sub!(/".*"/, "\"${{ needs.bump.outputs.new_version }}\"")
             end
             if $_ =~ /sha256\s+".*"/
               @sha_count += 1
@@ -120,5 +181,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Formula/16bits-audio-mcp.rb
-          git diff --cached --quiet || git commit -m "Update 16bits-audio-mcp to v${{ steps.version.outputs.version }}"
+          git diff --cached --quiet || git commit -m "Update 16bits-audio-mcp to v${{ needs.bump.outputs.new_version }}"
           git push
