@@ -1,4 +1,4 @@
-# 16bits-audio-mcp
+# 16bits-gaudio-mcp
 
 [![CI](https://github.com/Matuyuhi/16bits-gaudio-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Matuyuhi/16bits-gaudio-mcp/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/Matuyuhi/16bits-gaudio-mcp)](https://github.com/Matuyuhi/16bits-gaudio-mcp/releases/latest)
