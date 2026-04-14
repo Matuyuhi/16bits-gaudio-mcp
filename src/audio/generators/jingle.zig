@@ -9,9 +9,11 @@ pub const JingleConfig = struct {
     sample_rate: f32 = 44100.0,
     key: []const u8 = "C",
     tempo_feel: []const u8 = "normal",
+    seed: u32 = 0,
 };
 
 pub fn generate(allocator: std.mem.Allocator, config: JingleConfig) ![]f32 {
+    oscillator.resetNoise(config.seed);
     if (std.mem.eql(u8, config.jingle_type, "stage_clear")) return generateStageClear(allocator, config);
     if (std.mem.eql(u8, config.jingle_type, "game_over")) return generateGameOver(allocator, config);
     if (std.mem.eql(u8, config.jingle_type, "level_up")) return generateLevelUp(allocator, config);
