@@ -8,9 +8,13 @@ pub const SeConfig = struct {
     pitch: f32 = 1.0,
     volume: f32 = 0.8,
     sample_rate: f32 = 44100.0,
+    seed: u32 = 0,
 };
 
 pub fn generate(allocator: std.mem.Allocator, config: SeConfig) ![]f32 {
+    if (config.seed > 0) {
+        oscillator.resetNoise(config.seed);
+    }
     if (std.mem.eql(u8, config.se_type, "jump")) return generateJump(allocator, config);
     if (std.mem.eql(u8, config.se_type, "hit")) return generateHit(allocator, config);
     if (std.mem.eql(u8, config.se_type, "coin")) return generateCoin(allocator, config);
