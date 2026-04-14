@@ -114,6 +114,6 @@ pub fn buildToolResult(allocator: std.mem.Allocator, id_json: []const u8, text: 
 /// Build the initialize response
 pub fn buildInitializeResult(allocator: std.mem.Allocator, id_json: []const u8) ![]const u8 {
     return try buildJsonRpcResult(allocator, id_json,
-        \\{"protocolVersion":"2024-11-05","capabilities":{"tools":{}},"serverInfo":{"name":"16bits-audio-mcp","version":"0.5.0"}}
+        \\{"protocolVersion":"2024-11-05","capabilities":{"tools":{}},"serverInfo":{"name":"16bits-audio-mcp","version":"0.6.0"}}
     );
 }
