@@ -126,7 +126,10 @@ fn generateStageClear(allocator: std.mem.Allocator, config: JingleConfig) ![]f32
         @as(u8, root) + 7 + (base_oct + 1) * 12,
     };
     addChordLayer(buf, &chord_notes, 750.0 * speed, 1000.0 * speed, .square, .{
-        .attack_ms = 10.0, .decay_ms = 200.0, .sustain_level = 0.4, .release_ms = 300.0,
+        .attack_ms = 10.0,
+        .decay_ms = 200.0,
+        .sustain_level = 0.4,
+        .release_ms = 300.0,
     }, config.sample_rate, 0.15);
 
     try effects.applyReverb(allocator, buf, 0.5, 0.3);
@@ -255,7 +258,10 @@ fn generateBossClear(allocator: std.mem.Allocator, config: JingleConfig) ![]f32 
         @as(u8, root) + (base_oct + 2) * 12,
     };
     addChordLayer(buf, &chord_notes, 1300.0 * speed, 1500.0 * speed, .square, .{
-        .attack_ms = 20.0, .decay_ms = 300.0, .sustain_level = 0.5, .release_ms = 500.0,
+        .attack_ms = 20.0,
+        .decay_ms = 300.0,
+        .sustain_level = 0.5,
+        .release_ms = 500.0,
     }, config.sample_rate, 0.12);
 
     try effects.applyReverb(allocator, buf, 0.7, 0.4);
@@ -305,7 +311,10 @@ fn generateVictory(allocator: std.mem.Allocator, config: JingleConfig) ![]f32 {
         @as(u8, root) + (base_oct + 2) * 12,
     };
     addChordLayer(buf, &chord_notes, 950.0 * speed, 1200.0 * speed, .square, .{
-        .attack_ms = 15.0, .decay_ms = 250.0, .sustain_level = 0.45, .release_ms = 400.0,
+        .attack_ms = 15.0,
+        .decay_ms = 250.0,
+        .sustain_level = 0.45,
+        .release_ms = 400.0,
     }, config.sample_rate, 0.15);
 
     try effects.applyReverb(allocator, buf, 0.6, 0.35);
@@ -413,7 +422,10 @@ fn generateSave(allocator: std.mem.Allocator, config: JingleConfig) ![]f32 {
         @as(u8, root) + 4 + base_oct * 12,
     };
     addChordLayer(buf, &chord_notes, 200.0 * speed, 500.0 * speed, .sine, .{
-        .attack_ms = 20.0, .decay_ms = 100.0, .sustain_level = 0.3, .release_ms = 200.0,
+        .attack_ms = 20.0,
+        .decay_ms = 100.0,
+        .sustain_level = 0.3,
+        .release_ms = 200.0,
     }, config.sample_rate, 0.1);
 
     try effects.applyReverb(allocator, buf, 0.5, 0.25);
@@ -518,7 +530,10 @@ fn generateUnlock(allocator: std.mem.Allocator, config: JingleConfig) ![]f32 {
         @as(u8, root) + 7 + (base_oct + 1) * 12,
     };
     addChordLayer(buf, &chord_notes, 360.0 * speed, 600.0 * speed, .triangle, .{
-        .attack_ms = 10.0, .decay_ms = 150.0, .sustain_level = 0.35, .release_ms = 250.0,
+        .attack_ms = 10.0,
+        .decay_ms = 150.0,
+        .sustain_level = 0.35,
+        .release_ms = 250.0,
     }, config.sample_rate, 0.12);
 
     try effects.applyReverb(allocator, buf, 0.5, 0.3);

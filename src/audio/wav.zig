@@ -193,3 +193,72 @@ fn openFilePath(path: []const u8) !std.fs.File {
         return std.fs.cwd().openFile(path, .{});
     }
 }
+
+test "WAV write and read round-trip" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+    const path = "/tmp/zig_test_wav_roundtrip.wav";
+    defer std.fs.deleteFileAbsolute(path) catch {};
+
+    const sample_rate: u32 = 44100;
+    const num_samples: usize = 100;
+    var samples: [num_samples]f32 = undefined;
+    for (&samples, 0..) |*s, i| {
+        const t = @as(f32, @floatFromInt(i)) / @as(f32, @floatFromInt(sample_rate));
+        s.* = @sin(2.0 * std.math.pi * 440.0 * t);
+    }
+
+    try writeWav(path, &samples, sample_rate);
+
+    const data = try readWav(allocator, path);
+    defer allocator.free(data.samples);
+
+    try testing.expectEqual(num_samples, data.samples.len);
+    for (samples, data.samples) |orig, read| {
+        try testing.expectApproxEqAbs(orig, read, 0.001);
+    }
+}
+
+test "WAV f32 to i16 clamping" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+    const path = "/tmp/zig_test_wav_clamp.wav";
+    defer std.fs.deleteFileAbsolute(path) catch {};
+
+    const samples = [_]f32{ 2.0, -2.0, 0.5, -0.5 };
+    try writeWav(path, &samples, 44100);
+
+    const data = try readWav(allocator, path);
+    defer allocator.free(data.samples);
+
+    try testing.expectEqual(@as(usize, 4), data.samples.len);
+    // Over-range values should be clamped to approximately +/-1.0
+    try testing.expectApproxEqAbs(@as(f32, 1.0), data.samples[0], 0.001);
+    try testing.expectApproxEqAbs(@as(f32, -1.0), data.samples[1], 0.001);
+    // In-range values should be preserved
+    try testing.expectApproxEqAbs(@as(f32, 0.5), data.samples[2], 0.001);
+    try testing.expectApproxEqAbs(@as(f32, -0.5), data.samples[3], 0.001);
+}
+
+test "getWavInfo returns correct metadata" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+    const path = "/tmp/zig_test_wav_info.wav";
+    defer std.fs.deleteFileAbsolute(path) catch {};
+
+    const sample_rate: u32 = 44100;
+    const num_samples: usize = 441;
+    var samples: [num_samples]f32 = undefined;
+    for (&samples) |*s| {
+        s.* = 0.5;
+    }
+
+    try writeWav(path, &samples, sample_rate);
+
+    const info = try getWavInfo(allocator, path);
+
+    try testing.expectEqual(@as(u32, 44100), info.sample_rate);
+    try testing.expectEqual(@as(u16, 1), info.channels);
+    try testing.expectEqual(@as(u16, 16), info.bit_depth);
+    try testing.expectEqual(@as(u64, 10), info.duration_ms);
+}

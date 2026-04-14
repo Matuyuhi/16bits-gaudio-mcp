@@ -125,6 +125,18 @@ pub fn parseScale(name: []const u8) !Scale {
     return error.InvalidScale;
 }
 
+/// Parse chord quality name to enum
+pub fn parseChordQuality(name: []const u8) !ChordQuality {
+    if (std.mem.eql(u8, name, "major")) return .major_chord;
+    if (std.mem.eql(u8, name, "minor")) return .minor_chord;
+    if (std.mem.eql(u8, name, "diminished")) return .diminished;
+    if (std.mem.eql(u8, name, "augmented")) return .augmented;
+    if (std.mem.eql(u8, name, "sus2")) return .sus2;
+    if (std.mem.eql(u8, name, "sus4")) return .sus4;
+    if (std.mem.eql(u8, name, "seventh")) return .seventh;
+    return error.InvalidChordQuality;
+}
+
 /// Get chord progression for a given style.
 /// Returns array of ChordInfo for a 4-bar loop.
 pub fn getChordProgression(style: []const u8) ![]const ChordInfo {

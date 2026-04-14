@@ -126,7 +126,7 @@ fn handleToolsCall(allocator: std.mem.Allocator, id_json: []const u8, params_val
 
     const result = tools.executeTool(allocator, tool_name, arguments) catch |err| {
         const err_msg = switch (err) {
-            error.UnknownTool => try std.fmt.allocPrint(allocator, "Error: unknown tool: {s}. Valid tools: bgm_compose, jingle_gen, se_gen, note_synth, fm_patch, wav_fx, wav_mix, wav_info, wav_play", .{tool_name}),
+            error.UnknownTool => try std.fmt.allocPrint(allocator, "Error: unknown tool: {s}. Valid tools: bgm_compose, jingle_gen, se_gen, note_synth, fm_patch, wav_fx, wav_mix, wav_concat, wav_info, wav_play", .{tool_name}),
             error.MissingParam => try std.fmt.allocPrint(allocator, "Error: missing required parameter", .{}),
             error.InvalidParam => try std.fmt.allocPrint(allocator, "Error: invalid parameter value. Check parameter types and ranges", .{}),
             error.InvalidWavFile => try std.fmt.allocPrint(allocator, "Error: invalid WAV file", .{}),
@@ -136,6 +136,7 @@ fn handleToolsCall(allocator: std.mem.Allocator, id_json: []const u8, params_val
             error.UnknownStyle => try std.fmt.allocPrint(allocator, "Error: unknown BGM style. Valid styles: adventure, dungeon, boss, town, battle, field, puzzle, menu, horror, space, shop, castle, underwater, forest, cyber", .{}),
             error.InvalidKey => try std.fmt.allocPrint(allocator, "Error: invalid key", .{}),
             error.InvalidScale => try std.fmt.allocPrint(allocator, "Error: invalid scale. Valid scales: major, minor, pentatonic, blues, dorian, mixolydian, phrygian, lydian, harmonic_minor, chromatic", .{}),
+            error.InvalidChordQuality => try std.fmt.allocPrint(allocator, "Error: invalid chord quality. Valid qualities: major, minor, diminished, augmented, sus2, sus4, seventh", .{}),
             error.UnknownSeType => try std.fmt.allocPrint(allocator, "Error: unknown SE type. Valid types: jump, hit, coin, explosion, laser, powerup, error, footstep, menu_select, menu_cancel, dash, shield, heal, charge, warp, door, switch, splash, wind, thunder", .{}),
             error.UnknownJingleType => try std.fmt.allocPrint(allocator, "Error: unknown jingle type. Valid types: stage_clear, game_over, level_up, item_get, boss_clear, victory, defeat, secret_found, save, shop_buy, danger, unlock", .{}),
             error.FileNotFound => try std.fmt.allocPrint(allocator, "Error: file not found", .{}),
