@@ -24,6 +24,9 @@ jobs:
       - name: Build
         run: zig build
 
+      - name: Unit tests
+        run: zig build test
+
       - name: Test initialize
         run: |
           echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{}}}' \

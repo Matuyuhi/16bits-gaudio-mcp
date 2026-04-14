@@ -124,3 +124,78 @@ pub fn generateNote(config: AdsrConfig, sample_rate: f32, hold_samples: usize) [
     // This is a placeholder; actual generation is done inline in generators
     return &[_]f32{};
 }
+
+test "AdsrConfig default values are reasonable" {
+    const testing = std.testing;
+    const config = AdsrConfig{};
+    try testing.expect(config.attack_ms > 0.0);
+    try testing.expect(config.decay_ms > 0.0);
+    try testing.expect(config.sustain_level > 0.0 and config.sustain_level <= 1.0);
+    try testing.expect(config.release_ms > 0.0);
+}
+
+test "ADSR attack phase increases from near zero" {
+    const testing = std.testing;
+    const config = AdsrConfig{ .attack_ms = 10.0, .decay_ms = 50.0, .sustain_level = 0.7, .release_ms = 100.0 };
+    var adsr = Adsr.init(config, 44100.0);
+
+    // First sample should be near zero (start of attack)
+    const first = adsr.process();
+    try testing.expect(first >= 0.0 and first <= 1.0);
+
+    // After several samples, level should increase
+    var prev = first;
+    var increasing = false;
+    var i: usize = 0;
+    while (i < 100) : (i += 1) {
+        const v = adsr.process();
+        if (v > prev) increasing = true;
+        prev = v;
+    }
+    try testing.expect(increasing);
+}
+
+test "ADSR noteOff leads to isFinished" {
+    const testing = std.testing;
+    const config = AdsrConfig{ .attack_ms = 1.0, .decay_ms = 1.0, .sustain_level = 0.7, .release_ms = 1.0 };
+    var adsr = Adsr.init(config, 44100.0);
+
+    // Run through attack and into sustain
+    var i: usize = 0;
+    while (i < 500) : (i += 1) {
+        _ = adsr.process();
+    }
+
+    adsr.noteOff();
+
+    // Run through release
+    i = 0;
+    while (i < 500) : (i += 1) {
+        _ = adsr.process();
+    }
+
+    try testing.expect(adsr.isFinished());
+}
+
+test "ADSR reset brings back to attack phase" {
+    const testing = std.testing;
+    const config = AdsrConfig{ .attack_ms = 1.0, .decay_ms = 1.0, .sustain_level = 0.7, .release_ms = 1.0 };
+    var adsr = Adsr.init(config, 44100.0);
+
+    // Advance through all phases
+    var i: usize = 0;
+    while (i < 500) : (i += 1) {
+        _ = adsr.process();
+    }
+    adsr.noteOff();
+    i = 0;
+    while (i < 500) : (i += 1) {
+        _ = adsr.process();
+    }
+    try testing.expect(adsr.isFinished());
+
+    adsr.reset();
+    try testing.expect(!adsr.isFinished());
+    try testing.expectEqual(Phase.attack, adsr.phase);
+    try testing.expectApproxEqAbs(@as(f32, 0.0), adsr.level, 0.001);
+}
