@@ -276,6 +276,36 @@ pub fn getBeatsPerBar(style: []const u8) u8 {
     return 4; // 4/4 time
 }
 
+test "noteToHz A4 is 440 Hz" {
+    const hz = try noteToHz("A4");
+    try std.testing.expectApproxEqAbs(@as(f32, 440.0), hz, 0.01);
+}
+
+test "noteToHz C4 is middle C" {
+    const hz = try noteToHz("C4");
+    try std.testing.expectApproxEqAbs(@as(f32, 261.63), hz, 0.1);
+}
+
+test "keyToSemitone C is 0, A is 9" {
+    const testing = std.testing;
+    try testing.expectEqual(@as(u8, 0), try keyToSemitone("C"));
+    try testing.expectEqual(@as(u8, 9), try keyToSemitone("A"));
+}
+
+test "parseScale major returns valid intervals" {
+    const scale = try parseScale("major");
+    try std.testing.expectEqual(Scale.major, scale);
+    const intervals = getScaleIntervals(scale);
+    try std.testing.expect(intervals.len > 0);
+    // Major scale starts on 0
+    try std.testing.expectEqual(@as(u8, 0), intervals[0]);
+}
+
+test "midiToHz MIDI 69 is A4" {
+    const hz = midiToHz(69);
+    try std.testing.expectApproxEqAbs(@as(f32, 440.0), hz, 0.01);
+}
+
 /// Get chord tones as semitone offsets from chord root
 pub fn getChordTones(quality: ChordQuality) []const u8 {
     return switch (quality) {

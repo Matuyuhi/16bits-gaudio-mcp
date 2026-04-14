@@ -71,3 +71,67 @@ pub fn parseWaveform(name: []const u8) ?Waveform {
     if (std.mem.eql(u8, name, "noise")) return .noise;
     return null;
 }
+
+test "sine waveform" {
+    const testing = std.testing;
+    try testing.expectApproxEqAbs(@as(f32, 0.0), sine(0.0), 0.01);
+    try testing.expectApproxEqAbs(@as(f32, 1.0), sine(0.25), 0.01);
+}
+
+test "square waveform" {
+    const testing = std.testing;
+    try testing.expectEqual(@as(f32, 1.0), square(0.25));
+    try testing.expectEqual(@as(f32, -1.0), square(0.75));
+}
+
+test "sawtooth waveform" {
+    const testing = std.testing;
+    try testing.expectApproxEqAbs(@as(f32, -1.0), sawtooth(0.0), 0.01);
+    try testing.expectApproxEqAbs(@as(f32, 0.0), sawtooth(0.5), 0.01);
+    // Near 1.0 (approaching but not wrapping)
+    try testing.expect(sawtooth(1.0 - 0.001) > 0.99);
+}
+
+test "triangle waveform" {
+    const testing = std.testing;
+    try testing.expectApproxEqAbs(@as(f32, 0.0), triangle(0.0), 0.01);
+    try testing.expectApproxEqAbs(@as(f32, 1.0), triangle(0.25), 0.01);
+    try testing.expectApproxEqAbs(@as(f32, -1.0), triangle(0.75), 0.01);
+}
+
+test "pulse waveform" {
+    const testing = std.testing;
+    try testing.expectEqual(@as(f32, 1.0), pulse(0.1, 0.25));
+    try testing.expectEqual(@as(f32, -1.0), pulse(0.3, 0.25));
+}
+
+test "noise waveform range" {
+    var i: usize = 0;
+    while (i < 1000) : (i += 1) {
+        const v = noise();
+        try std.testing.expect(v >= -1.0 and v <= 1.0);
+    }
+}
+
+test "noise reset produces same sequence" {
+    const testing = std.testing;
+    resetNoise(42);
+    const a0 = noise();
+    const a1 = noise();
+    const a2 = noise();
+
+    resetNoise(42);
+    const b0 = noise();
+    const b1 = noise();
+    const b2 = noise();
+
+    try testing.expectEqual(a0, b0);
+    try testing.expectEqual(a1, b1);
+    try testing.expectEqual(a2, b2);
+}
+
+test "parseWaveform" {
+    const testing = std.testing;
+    try testing.expectEqual(Waveform.sine, parseWaveform("sine").?);
+    try testing.expect(parseWaveform("invalid") == null);
+}
