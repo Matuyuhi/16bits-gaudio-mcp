@@ -61,4 +61,40 @@ pub fn build(b: *std.Build) void {
         }),
     });
     test_step.dependOn(&b.addRunArtifact(filter_tests).step);
+
+    const effects_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/audio/effects.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    test_step.dependOn(&b.addRunArtifact(effects_tests).step);
+
+    const mixer_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/audio/mixer.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    test_step.dependOn(&b.addRunArtifact(mixer_tests).step);
+
+    const wav_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/audio/wav.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    test_step.dependOn(&b.addRunArtifact(wav_tests).step);
+
+    const fm_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/audio/fm.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    test_step.dependOn(&b.addRunArtifact(fm_tests).step);
 }

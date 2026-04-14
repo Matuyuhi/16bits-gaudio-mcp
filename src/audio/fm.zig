@@ -56,3 +56,87 @@ pub fn generate(allocator: std.mem.Allocator, config: FmConfig) ![]f32 {
 
     return buf;
 }
+
+test "FM synthesis produces non-silent output" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const config = FmConfig{
+        .carrier_freq = 440.0,
+        .modulator_ratio = 2.0,
+        .modulation_index = 1.0,
+        .carrier_adsr = .{},
+        .modulator_adsr = .{},
+        .duration_ms = 100.0,
+        .sample_rate = 44100.0,
+    };
+
+    const samples = try generate(allocator, config);
+    defer allocator.free(samples);
+
+    var any_nonzero = false;
+    for (samples) |s| {
+        if (@abs(s) > 0.01) {
+            any_nonzero = true;
+            break;
+        }
+    }
+    try testing.expect(any_nonzero);
+}
+
+test "FM modulation index affects timbre" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const config_pure = FmConfig{
+        .carrier_freq = 440.0,
+        .modulator_ratio = 2.0,
+        .modulation_index = 0.0,
+        .carrier_adsr = .{},
+        .modulator_adsr = .{},
+        .duration_ms = 100.0,
+        .sample_rate = 44100.0,
+    };
+
+    const config_modulated = FmConfig{
+        .carrier_freq = 440.0,
+        .modulator_ratio = 2.0,
+        .modulation_index = 5.0,
+        .carrier_adsr = .{},
+        .modulator_adsr = .{},
+        .duration_ms = 100.0,
+        .sample_rate = 44100.0,
+    };
+
+    const samples_pure = try generate(allocator, config_pure);
+    defer allocator.free(samples_pure);
+
+    const samples_modulated = try generate(allocator, config_modulated);
+    defer allocator.free(samples_modulated);
+
+    // The two signals should differ at sample index 1000
+    const diff = @abs(samples_pure[1000] - samples_modulated[1000]);
+    try testing.expect(diff > 0.01);
+}
+
+test "FM synthesis output is within range" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+
+    const config = FmConfig{
+        .carrier_freq = 440.0,
+        .modulator_ratio = 2.0,
+        .modulation_index = 3.0,
+        .carrier_adsr = .{},
+        .modulator_adsr = .{},
+        .duration_ms = 200.0,
+        .sample_rate = 44100.0,
+    };
+
+    const samples = try generate(allocator, config);
+    defer allocator.free(samples);
+
+    for (samples) |s| {
+        try testing.expect(s >= -1.5 and s <= 1.5);
+    }
+}

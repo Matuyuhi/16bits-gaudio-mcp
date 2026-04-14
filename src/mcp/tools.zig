@@ -20,13 +20,14 @@ const JsonValue = std.json.Value;
 
 /// Tools list JSON response body (MUST be single line — MCP uses newline-delimited JSON-RPC)
 pub const tools_list_json = "{\"tools\":[" ++
-    "{\"name\":\"bgm_compose\",\"description\":\"Generate loopable game BGM with multi-track composition (melody, bass, harmony, percussion). 15 styles available, each with unique timbre/rhythm.\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"output\":{\"type\":\"string\",\"description\":\"Output WAV file path\"},\"style\":{\"type\":\"string\",\"enum\":[\"adventure\",\"dungeon\",\"boss\",\"town\",\"battle\",\"field\",\"puzzle\",\"menu\",\"horror\",\"space\",\"shop\",\"castle\",\"underwater\",\"forest\",\"cyber\"],\"description\":\"BGM style\"},\"bpm\":{\"type\":\"number\",\"description\":\"Beats per minute\"},\"duration_bars\":{\"type\":\"number\",\"description\":\"Number of bars to generate\"},\"sample_rate\":{\"type\":\"number\",\"description\":\"Sample rate (e.g. 44100)\"},\"key\":{\"type\":\"string\",\"description\":\"Musical key (e.g. C, D, F#)\"},\"scale\":{\"type\":\"string\",\"enum\":[\"major\",\"minor\",\"pentatonic\",\"blues\",\"dorian\",\"mixolydian\",\"phrygian\",\"lydian\",\"harmonic_minor\",\"chromatic\"],\"description\":\"Musical scale\"},\"seed\":{\"type\":\"number\",\"description\":\"Random seed for deterministic generation\"}},\"required\":[\"output\",\"style\",\"bpm\",\"duration_bars\",\"sample_rate\",\"key\",\"scale\",\"seed\"]}}," ++
+    "{\"name\":\"bgm_compose\",\"description\":\"Generate loopable game BGM with multi-track composition (melody, bass, harmony, percussion). 15 styles available, each with unique timbre/rhythm.\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"output\":{\"type\":\"string\",\"description\":\"Output WAV file path\"},\"style\":{\"type\":\"string\",\"enum\":[\"adventure\",\"dungeon\",\"boss\",\"town\",\"battle\",\"field\",\"puzzle\",\"menu\",\"horror\",\"space\",\"shop\",\"castle\",\"underwater\",\"forest\",\"cyber\"],\"description\":\"BGM style\"},\"bpm\":{\"type\":\"number\",\"description\":\"Beats per minute\"},\"duration_bars\":{\"type\":\"number\",\"description\":\"Number of bars to generate\"},\"sample_rate\":{\"type\":\"number\",\"description\":\"Sample rate (e.g. 44100)\"},\"key\":{\"type\":\"string\",\"description\":\"Musical key (e.g. C, D, F#)\"},\"scale\":{\"type\":\"string\",\"enum\":[\"major\",\"minor\",\"pentatonic\",\"blues\",\"dorian\",\"mixolydian\",\"phrygian\",\"lydian\",\"harmonic_minor\",\"chromatic\"],\"description\":\"Musical scale\"},\"seed\":{\"type\":\"number\",\"description\":\"Random seed for deterministic generation\"},\"chord_progression\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"root\":{\"type\":\"string\",\"description\":\"Chord root note (e.g. C, F#, Bb)\"},\"quality\":{\"type\":\"string\",\"enum\":[\"major\",\"minor\",\"diminished\",\"augmented\",\"sus2\",\"sus4\",\"seventh\"],\"description\":\"Chord quality\"}},\"required\":[\"root\",\"quality\"]},\"description\":\"Custom chord progression (overrides style default). One chord per bar.\"},\"melody_density\":{\"type\":\"number\",\"description\":\"Melody density 0-10 (overrides style default)\"},\"swing\":{\"type\":\"number\",\"description\":\"Swing feel 0.0-0.5 (overrides style default)\"}},\"required\":[\"output\",\"style\",\"bpm\",\"duration_bars\",\"sample_rate\",\"key\",\"scale\",\"seed\"]}}," ++
     "{\"name\":\"jingle_gen\",\"description\":\"Generate short game event jingles. 12 types: stage_clear, game_over, level_up, item_get, boss_clear, victory, defeat, secret_found, save, shop_buy, danger, unlock.\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"output\":{\"type\":\"string\",\"description\":\"Output WAV file path\"},\"type\":{\"type\":\"string\",\"enum\":[\"stage_clear\",\"game_over\",\"level_up\",\"item_get\",\"boss_clear\",\"victory\",\"defeat\",\"secret_found\",\"save\",\"shop_buy\",\"danger\",\"unlock\"],\"description\":\"Jingle type\"},\"sample_rate\":{\"type\":\"number\",\"description\":\"Sample rate\"},\"key\":{\"type\":\"string\",\"description\":\"Musical key\"},\"tempo_feel\":{\"type\":\"string\",\"enum\":[\"fast\",\"normal\",\"slow\",\"triumphant\"],\"description\":\"Tempo feel\"}},\"required\":[\"output\",\"type\",\"sample_rate\",\"key\",\"tempo_feel\"]}}," ++
     "{\"name\":\"se_gen\",\"description\":\"Generate game sound effects. 20 types: jump, hit, coin, explosion, laser, powerup, error, footstep, menu_select, menu_cancel, dash, shield, heal, charge, warp, door, switch, splash, wind, thunder.\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"output\":{\"type\":\"string\",\"description\":\"Output WAV file path\"},\"type\":{\"type\":\"string\",\"enum\":[\"jump\",\"hit\",\"coin\",\"explosion\",\"laser\",\"powerup\",\"error\",\"footstep\",\"menu_select\",\"menu_cancel\",\"dash\",\"shield\",\"heal\",\"charge\",\"warp\",\"door\",\"switch\",\"splash\",\"wind\",\"thunder\"],\"description\":\"Sound effect type\"},\"pitch\":{\"type\":\"number\",\"description\":\"Pitch multiplier (1.0 = standard, 0.5 = octave down, 2.0 = octave up)\"},\"volume\":{\"type\":\"number\",\"description\":\"Volume (0.0 to 1.0)\"},\"sample_rate\":{\"type\":\"number\",\"description\":\"Sample rate\"},\"seed\":{\"type\":\"number\",\"description\":\"Random seed for deterministic noise (0 = use accumulated state)\"}},\"required\":[\"output\",\"type\",\"pitch\",\"volume\",\"sample_rate\"]}}," ++
     "{\"name\":\"note_synth\",\"description\":\"Synthesize single notes or chords and write to WAV (low-level API)\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"output\":{\"type\":\"string\",\"description\":\"Output WAV file path\"},\"notes\":{\"type\":\"array\",\"items\":{\"type\":\"string\"},\"description\":\"Note names (e.g. [C4, E4, G4])\"},\"waveform\":{\"type\":\"string\",\"enum\":[\"sine\",\"square\",\"sawtooth\",\"triangle\",\"pulse\"],\"description\":\"Waveform type\"},\"duration_ms\":{\"type\":\"number\",\"description\":\"Duration in milliseconds\"},\"adsr\":{\"type\":\"object\",\"properties\":{\"attack_ms\":{\"type\":\"number\"},\"decay_ms\":{\"type\":\"number\"},\"sustain_level\":{\"type\":\"number\"},\"release_ms\":{\"type\":\"number\"}},\"description\":\"ADSR envelope\"},\"sample_rate\":{\"type\":\"number\",\"description\":\"Sample rate\"},\"reverb\":{\"type\":\"boolean\",\"description\":\"Apply reverb\"}},\"required\":[\"output\",\"notes\",\"waveform\",\"duration_ms\",\"adsr\",\"sample_rate\"]}}," ++
     "{\"name\":\"fm_patch\",\"description\":\"Generate a single tone using FM synthesis (YM2612-style 2-operator)\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"output\":{\"type\":\"string\",\"description\":\"Output WAV file path\"},\"carrier_note\":{\"type\":\"string\",\"description\":\"Carrier note (e.g. A2)\"},\"modulator_ratio\":{\"type\":\"number\",\"description\":\"Modulator frequency ratio to carrier\"},\"modulation_index\":{\"type\":\"number\",\"description\":\"FM modulation depth\"},\"carrier_adsr\":{\"type\":\"object\",\"properties\":{\"attack_ms\":{\"type\":\"number\"},\"decay_ms\":{\"type\":\"number\"},\"sustain_level\":{\"type\":\"number\"},\"release_ms\":{\"type\":\"number\"}}},\"modulator_adsr\":{\"type\":\"object\",\"properties\":{\"attack_ms\":{\"type\":\"number\"},\"decay_ms\":{\"type\":\"number\"},\"sustain_level\":{\"type\":\"number\"},\"release_ms\":{\"type\":\"number\"}}},\"duration_ms\":{\"type\":\"number\",\"description\":\"Duration in milliseconds\"},\"sample_rate\":{\"type\":\"number\",\"description\":\"Sample rate\"}},\"required\":[\"output\",\"carrier_note\",\"modulator_ratio\",\"modulation_index\",\"carrier_adsr\",\"modulator_adsr\",\"duration_ms\",\"sample_rate\"]}}," ++
     "{\"name\":\"wav_fx\",\"description\":\"Apply audio effects to an existing WAV file. Supports: reverb, delay, lowpass, highpass, bandpass, chorus, distortion, bitcrusher, tremolo.\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"input\":{\"type\":\"string\",\"description\":\"Input WAV file path\"},\"output\":{\"type\":\"string\",\"description\":\"Output WAV file path\"},\"effects\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"type\":{\"type\":\"string\",\"enum\":[\"reverb\",\"delay\",\"lowpass\",\"highpass\",\"bandpass\",\"chorus\",\"distortion\",\"bitcrusher\",\"tremolo\"]},\"room_size\":{\"type\":\"number\",\"description\":\"Reverb room size 0-1\"},\"wet\":{\"type\":\"number\",\"description\":\"Wet/dry mix 0-1\"},\"delay_ms\":{\"type\":\"number\",\"description\":\"Delay time in ms\"},\"feedback\":{\"type\":\"number\",\"description\":\"Delay feedback 0-1\"},\"cutoff_hz\":{\"type\":\"number\",\"description\":\"Filter cutoff frequency\"},\"low_hz\":{\"type\":\"number\",\"description\":\"Bandpass low frequency\"},\"high_hz\":{\"type\":\"number\",\"description\":\"Bandpass high frequency\"},\"depth\":{\"type\":\"number\",\"description\":\"Chorus depth / tremolo depth 0-1\"},\"rate\":{\"type\":\"number\",\"description\":\"Chorus/tremolo LFO rate in Hz\"},\"drive\":{\"type\":\"number\",\"description\":\"Distortion drive 0-1\"},\"bit_depth\":{\"type\":\"number\",\"description\":\"Bitcrusher bit depth 1-16\"},\"downsample\":{\"type\":\"number\",\"description\":\"Bitcrusher downsample factor 1-64\"}}},\"description\":\"Array of effects to apply in chain\"}},\"required\":[\"input\",\"output\",\"effects\"]}}," ++
     "{\"name\":\"wav_mix\",\"description\":\"Mix multiple WAV files into one (supports different lengths, gains, and offsets)\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"tracks\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\"},\"gain\":{\"type\":\"number\"},\"offset_ms\":{\"type\":\"number\"}}},\"description\":\"Tracks to mix\"},\"output\":{\"type\":\"string\",\"description\":\"Output WAV file path\"},\"normalize\":{\"type\":\"boolean\",\"description\":\"Normalize to -1dBFS\"}},\"required\":[\"tracks\",\"output\"]}}," ++
+    "{\"name\":\"wav_concat\",\"description\":\"Concatenate multiple WAV files sequentially into one file, with optional gap or crossfade between segments.\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"segments\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\",\"description\":\"Input WAV file path\"},\"gain\":{\"type\":\"number\",\"description\":\"Gain multiplier (default 1.0)\"}},\"required\":[\"path\"]},\"description\":\"Audio segments to concatenate in order\"},\"output\":{\"type\":\"string\",\"description\":\"Output WAV file path\"},\"gap_ms\":{\"type\":\"number\",\"description\":\"Silence gap between segments in ms (default 0)\"},\"crossfade_ms\":{\"type\":\"number\",\"description\":\"Crossfade duration between segments in ms (default 0, overrides gap_ms)\"},\"normalize\":{\"type\":\"boolean\",\"description\":\"Normalize output to -1dBFS (default false)\"}},\"required\":[\"segments\",\"output\"]}}," ++
     "{\"name\":\"wav_info\",\"description\":\"Get WAV file metadata and waveform statistics\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\",\"description\":\"WAV file path\"}},\"required\":[\"path\"]}}," ++
     "{\"name\":\"wav_play\",\"description\":\"Play a WAV file asynchronously (macOS: afplay, Linux: aplay)\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\",\"description\":\"WAV file path to play\"}},\"required\":[\"path\"]}}" ++
     "]}";
@@ -93,6 +94,7 @@ pub fn executeTool(allocator: std.mem.Allocator, name: []const u8, args: std.jso
     if (std.mem.eql(u8, name, "fm_patch")) return execFmPatch(allocator, args);
     if (std.mem.eql(u8, name, "wav_fx")) return execWavFx(allocator, args);
     if (std.mem.eql(u8, name, "wav_mix")) return execWavMix(allocator, args);
+    if (std.mem.eql(u8, name, "wav_concat")) return execWavConcat(allocator, args);
     if (std.mem.eql(u8, name, "wav_info")) return execWavInfo(allocator, args);
     if (std.mem.eql(u8, name, "wav_play")) return execWavPlay(allocator, args);
     return error.UnknownTool;
@@ -108,6 +110,41 @@ fn execBgmCompose(allocator: std.mem.Allocator, args: std.json.ObjectMap) ![]con
     const scale = getString(args.get("scale")) orelse return error.MissingParam;
     const seed_f = getNumber(args.get("seed")) orelse return error.MissingParam;
 
+    // Parse optional overrides
+    const melody_density_override: ?u8 = if (getNumber(args.get("melody_density"))) |v|
+        @intFromFloat(@max(0.0, @min(10.0, v)))
+    else
+        null;
+    const swing_override: ?f32 = if (getNumber(args.get("swing"))) |v|
+        @floatCast(@max(0.0, @min(0.5, v)))
+    else
+        null;
+
+    // Parse optional chord progression
+    var custom_chords_buf: [32]sequencer_mod.ChordInfo = undefined;
+    var custom_chords_len: usize = 0;
+    const custom_chords: ?[]const sequencer_mod.ChordInfo = blk: {
+        const chord_arr = getArray(args.get("chord_progression")) orelse break :blk null;
+        const key_semitone = try sequencer_mod.keyToSemitone(key);
+        for (chord_arr.items) |chord_val| {
+            if (custom_chords_len >= custom_chords_buf.len) break;
+            const chord_obj = getObject(chord_val) orelse continue;
+            const root_name = getString(chord_obj.get("root")) orelse continue;
+            const quality_name = getString(chord_obj.get("quality")) orelse continue;
+            const root_semitone = try sequencer_mod.keyToSemitone(root_name);
+            const quality = try sequencer_mod.parseChordQuality(quality_name);
+            const offset: i16 = @as(i16, @intCast(root_semitone)) - @as(i16, @intCast(key_semitone));
+            const normalized_offset: i8 = @intCast(@mod(offset + 12, 12));
+            custom_chords_buf[custom_chords_len] = .{
+                .root_semitone = normalized_offset,
+                .quality = quality,
+            };
+            custom_chords_len += 1;
+        }
+        if (custom_chords_len > 0) break :blk custom_chords_buf[0..custom_chords_len];
+        break :blk null;
+    };
+
     const sample_rate: u32 = @intFromFloat(sr_f);
     const samples = try bgm.generate(allocator, .{
         .style = style,
@@ -117,6 +154,9 @@ fn execBgmCompose(allocator: std.mem.Allocator, args: std.json.ObjectMap) ![]con
         .key = key,
         .scale = scale,
         .seed = @intFromFloat(seed_f),
+        .custom_chords = custom_chords,
+        .melody_density_override = melody_density_override,
+        .swing_override = swing_override,
     });
     defer allocator.free(samples);
 
@@ -388,6 +428,62 @@ fn execWavMix(allocator: std.mem.Allocator, args: std.json.ObjectMap) ![]const u
         allocator,
         "Mixed: {s}\ntracks: {d}\nduration_ms: {d}\nsample_rate: {d}",
         .{ output_path, tracks_arr.items.len, duration_ms, max_sr },
+    );
+}
+
+fn execWavConcat(allocator: std.mem.Allocator, args: std.json.ObjectMap) ![]const u8 {
+    const output_path = getString(args.get("output")) orelse return error.MissingParam;
+    const do_normalize = getBool(args.get("normalize")) orelse false;
+    const gap_ms_f = getNumber(args.get("gap_ms")) orelse 0.0;
+    const crossfade_ms_f = getNumber(args.get("crossfade_ms")) orelse 0.0;
+    const segments_arr = getArray(args.get("segments")) orelse return error.MissingParam;
+
+    var seg_data: std.ArrayList(struct { samples: []f32, sr: u32 }) = .empty;
+    defer {
+        for (seg_data.items) |sd| {
+            allocator.free(sd.samples);
+        }
+        seg_data.deinit(allocator);
+    }
+
+    var concat_segs: std.ArrayList(mixer_mod.ConcatSegment) = .empty;
+    defer concat_segs.deinit(allocator);
+
+    var first_sr: u32 = 44100;
+
+    for (segments_arr.items, 0..) |seg_val, i| {
+        const seg_obj = getObject(seg_val) orelse continue;
+        const path = getString(seg_obj.get("path")) orelse continue;
+        const gain_f = getNumber(seg_obj.get("gain")) orelse 1.0;
+
+        const data = try wav.readWav(allocator, path);
+        if (i == 0) first_sr = data.info.sample_rate;
+
+        try seg_data.append(allocator, .{ .samples = data.samples, .sr = data.info.sample_rate });
+        try concat_segs.append(allocator, .{
+            .samples = data.samples,
+            .gain = @floatCast(gain_f),
+        });
+    }
+
+    const sr_f: f32 = @floatFromInt(first_sr);
+    const gap_samples: usize = @intFromFloat(@max(0.0, gap_ms_f) * sr_f / 1000.0);
+    const crossfade_samples: usize = @intFromFloat(@max(0.0, crossfade_ms_f) * sr_f / 1000.0);
+
+    const concatenated = try mixer_mod.concatSegments(allocator, concat_segs.items, gap_samples, crossfade_samples);
+    defer allocator.free(concatenated);
+
+    if (do_normalize) {
+        mixer_mod.normalize(concatenated, -1.0);
+    }
+
+    try wav.writeWav(output_path, concatenated, first_sr);
+
+    const duration_ms = @as(u64, concatenated.len) * 1000 / @as(u64, first_sr);
+    return try std.fmt.allocPrint(
+        allocator,
+        "Concatenated: {s}\nsegments: {d}\nduration_ms: {d}\nsample_rate: {d}",
+        .{ output_path, segments_arr.items.len, duration_ms, first_sr },
     );
 }
 
