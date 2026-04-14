@@ -95,7 +95,7 @@ pub fn executeTool(allocator: std.mem.Allocator, name: []const u8, args: std.jso
     if (std.mem.eql(u8, name, "wav_mix")) return execWavMix(allocator, args);
     if (std.mem.eql(u8, name, "wav_info")) return execWavInfo(allocator, args);
     if (std.mem.eql(u8, name, "wav_play")) return execWavPlay(allocator, args);
-    return error.UnknownTool;
+    return try std.fmt.allocPrint(allocator, "Error: unknown tool '{s}'. Valid tools: bgm_compose, jingle_gen, se_gen, note_synth, fm_patch, wav_fx, wav_mix, wav_info, wav_play", .{name});
 }
 
 fn execBgmCompose(allocator: std.mem.Allocator, args: std.json.ObjectMap) ![]const u8 {
@@ -107,6 +107,30 @@ fn execBgmCompose(allocator: std.mem.Allocator, args: std.json.ObjectMap) ![]con
     const key = getString(args.get("key")) orelse return error.MissingParam;
     const scale = getString(args.get("scale")) orelse return error.MissingParam;
     const seed_f = getNumber(args.get("seed")) orelse return error.MissingParam;
+
+    const valid_bgm_styles = [_][]const u8{ "adventure", "dungeon", "boss", "town", "battle", "field", "puzzle", "menu", "horror", "space", "shop", "castle", "underwater", "forest", "cyber" };
+    var style_valid = false;
+    for (valid_bgm_styles) |vs| {
+        if (std.mem.eql(u8, style, vs)) {
+            style_valid = true;
+            break;
+        }
+    }
+    if (!style_valid) {
+        return try std.fmt.allocPrint(allocator, "Error: unknown BGM style '{s}'. Valid styles: adventure, dungeon, boss, town, battle, field, puzzle, menu, horror, space, shop, castle, underwater, forest, cyber", .{style});
+    }
+
+    const valid_scales = [_][]const u8{ "major", "minor", "pentatonic", "blues", "dorian", "mixolydian", "phrygian", "lydian", "harmonic_minor", "chromatic" };
+    var scale_valid = false;
+    for (valid_scales) |vs| {
+        if (std.mem.eql(u8, scale, vs)) {
+            scale_valid = true;
+            break;
+        }
+    }
+    if (!scale_valid) {
+        return try std.fmt.allocPrint(allocator, "Error: unknown scale '{s}'. Valid scales: major, minor, pentatonic, blues, dorian, mixolydian, phrygian, lydian, harmonic_minor, chromatic", .{scale});
+    }
 
     const sample_rate: u32 = @intFromFloat(sr_f);
     const samples = try bgm.generate(allocator, .{
@@ -137,6 +161,18 @@ fn execJingleGen(allocator: std.mem.Allocator, args: std.json.ObjectMap) ![]cons
     const key = getString(args.get("key")) orelse return error.MissingParam;
     const tempo_feel = getString(args.get("tempo_feel")) orelse return error.MissingParam;
 
+    const valid_jingle_types = [_][]const u8{ "stage_clear", "game_over", "level_up", "item_get", "boss_clear", "victory", "defeat", "secret_found", "save", "shop_buy", "danger", "unlock" };
+    var jingle_valid = false;
+    for (valid_jingle_types) |vt| {
+        if (std.mem.eql(u8, jingle_type, vt)) {
+            jingle_valid = true;
+            break;
+        }
+    }
+    if (!jingle_valid) {
+        return try std.fmt.allocPrint(allocator, "Error: unknown jingle type '{s}'. Valid types: stage_clear, game_over, level_up, item_get, boss_clear, victory, defeat, secret_found, save, shop_buy, danger, unlock", .{jingle_type});
+    }
+
     const sample_rate: u32 = @intFromFloat(sr_f);
     const samples = try jingle.generate(allocator, .{
         .jingle_type = jingle_type,
@@ -162,6 +198,18 @@ fn execSeGen(allocator: std.mem.Allocator, args: std.json.ObjectMap) ![]const u8
     const pitch_f = getNumber(args.get("pitch")) orelse 1.0;
     const volume_f = getNumber(args.get("volume")) orelse 0.8;
     const sr_f = getNumber(args.get("sample_rate")) orelse return error.MissingParam;
+
+    const valid_se_types = [_][]const u8{ "jump", "hit", "coin", "explosion", "laser", "powerup", "error", "footstep", "menu_select", "menu_cancel", "dash", "shield", "heal", "charge", "warp", "door", "switch", "splash", "wind", "thunder" };
+    var se_valid = false;
+    for (valid_se_types) |vt| {
+        if (std.mem.eql(u8, se_type, vt)) {
+            se_valid = true;
+            break;
+        }
+    }
+    if (!se_valid) {
+        return try std.fmt.allocPrint(allocator, "Error: unknown SE type '{s}'. Valid types: jump, hit, coin, explosion, laser, powerup, error, footstep, menu_select, menu_cancel, dash, shield, heal, charge, warp, door, switch, splash, wind, thunder", .{se_type});
+    }
 
     const sample_rate: u32 = @intFromFloat(sr_f);
     const samples = try se.generate(allocator, .{
