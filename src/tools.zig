@@ -1,22 +1,26 @@
 const std = @import("std");
-const protocol = @import("protocol.zig");
+const mcp = @import("zig-mcp-sdk");
 
 // Audio modules
-const wav = @import("../audio/wav.zig");
-const oscillator_mod = @import("../audio/oscillator.zig");
-const envelope_mod = @import("../audio/envelope.zig");
-const fm_mod = @import("../audio/fm.zig");
-const effects_mod = @import("../audio/effects.zig");
-const mixer_mod = @import("../audio/mixer.zig");
-const sequencer_mod = @import("../audio/sequencer.zig");
-const filter_mod = @import("../audio/filter.zig");
+const wav = @import("audio/wav.zig");
+const oscillator_mod = @import("audio/oscillator.zig");
+const envelope_mod = @import("audio/envelope.zig");
+const fm_mod = @import("audio/fm.zig");
+const effects_mod = @import("audio/effects.zig");
+const mixer_mod = @import("audio/mixer.zig");
+const sequencer_mod = @import("audio/sequencer.zig");
+const filter_mod = @import("audio/filter.zig");
 
 // Generators
-const bgm = @import("../audio/generators/bgm.zig");
-const jingle = @import("../audio/generators/jingle.zig");
-const se = @import("../audio/generators/se.zig");
+const bgm = @import("audio/generators/bgm.zig");
+const jingle = @import("audio/generators/jingle.zig");
+const se = @import("audio/generators/se.zig");
 
-const JsonValue = std.json.Value;
+const getString = mcp.json.getString;
+const getNumber = mcp.json.getNumber;
+const getBool = mcp.json.getBool;
+const getObject = mcp.json.getObject;
+const getArray = mcp.json.getArray;
 
 /// Tools list JSON response body (MUST be single line — MCP uses newline-delimited JSON-RPC)
 pub const tools_list_json = "{\"tools\":[" ++
@@ -32,48 +36,6 @@ pub const tools_list_json = "{\"tools\":[" ++
     "{\"name\":\"wav_play\",\"description\":\"Play a WAV file asynchronously (macOS: afplay, Linux: aplay)\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\",\"description\":\"WAV file path to play\"}},\"required\":[\"path\"]}}" ++
     "]}";
 
-// Helper functions to extract JSON values
-fn getString(val: ?JsonValue) ?[]const u8 {
-    const v = val orelse return null;
-    return switch (v) {
-        .string => |s| s,
-        else => null,
-    };
-}
-
-fn getNumber(val: ?JsonValue) ?f64 {
-    const v = val orelse return null;
-    return switch (v) {
-        .integer => |n| @floatFromInt(n),
-        .float => |f| f,
-        else => null,
-    };
-}
-
-fn getBool(val: ?JsonValue) ?bool {
-    const v = val orelse return null;
-    return switch (v) {
-        .bool => |b| b,
-        else => null,
-    };
-}
-
-fn getObject(val: ?JsonValue) ?std.json.ObjectMap {
-    const v = val orelse return null;
-    return switch (v) {
-        .object => |o| o,
-        else => null,
-    };
-}
-
-fn getArray(val: ?JsonValue) ?std.json.Array {
-    const v = val orelse return null;
-    return switch (v) {
-        .array => |a| a,
-        else => null,
-    };
-}
-
 fn parseAdsr(obj: ?std.json.ObjectMap) envelope_mod.AdsrConfig {
     const o = obj orelse return .{};
     return .{
@@ -85,8 +47,33 @@ fn parseAdsr(obj: ?std.json.ObjectMap) envelope_mod.AdsrConfig {
 }
 
 /// Execute a tool by name with the given arguments.
-/// Returns a result string on success, or an error message.
-pub fn executeTool(allocator: std.mem.Allocator, name: []const u8, args: std.json.ObjectMap) ![]const u8 {
+/// Returns a ToolResult with text and is_error flag.
+/// This is the public ToolHandler-compatible entry point.
+pub fn executeTool(allocator: std.mem.Allocator, name: []const u8, args: std.json.ObjectMap) anyerror!mcp.ToolResult {
+    const text = executeToolInner(allocator, name, args) catch |err| {
+        const err_msg = switch (err) {
+            error.UnknownTool => try std.fmt.allocPrint(allocator, "Error: unknown tool: {s}. Valid tools: bgm_compose, jingle_gen, se_gen, note_synth, fm_patch, wav_fx, wav_mix, wav_concat, wav_info, wav_play", .{name}),
+            error.MissingParam => try std.fmt.allocPrint(allocator, "Error: missing required parameter", .{}),
+            error.InvalidParam => try std.fmt.allocPrint(allocator, "Error: invalid parameter value. Check parameter types and ranges", .{}),
+            error.InvalidWavFile => try std.fmt.allocPrint(allocator, "Error: invalid WAV file", .{}),
+            error.UnsupportedBitDepth => try std.fmt.allocPrint(allocator, "Error: only 16-bit PCM WAV is supported", .{}),
+            error.UnsupportedFormat => try std.fmt.allocPrint(allocator, "Error: unsupported WAV format", .{}),
+            error.InvalidNoteName => try std.fmt.allocPrint(allocator, "Error: invalid note name", .{}),
+            error.UnknownStyle => try std.fmt.allocPrint(allocator, "Error: unknown BGM style. Valid styles: adventure, dungeon, boss, town, battle, field, puzzle, menu, horror, space, shop, castle, underwater, forest, cyber", .{}),
+            error.InvalidKey => try std.fmt.allocPrint(allocator, "Error: invalid key", .{}),
+            error.InvalidScale => try std.fmt.allocPrint(allocator, "Error: invalid scale. Valid scales: major, minor, pentatonic, blues, dorian, mixolydian, phrygian, lydian, harmonic_minor, chromatic", .{}),
+            error.InvalidChordQuality => try std.fmt.allocPrint(allocator, "Error: invalid chord quality. Valid qualities: major, minor, diminished, augmented, sus2, sus4, seventh", .{}),
+            error.UnknownSeType => try std.fmt.allocPrint(allocator, "Error: unknown SE type. Valid types: jump, hit, coin, explosion, laser, powerup, error, footstep, menu_select, menu_cancel, dash, shield, heal, charge, warp, door, switch, splash, wind, thunder", .{}),
+            error.UnknownJingleType => try std.fmt.allocPrint(allocator, "Error: unknown jingle type. Valid types: stage_clear, game_over, level_up, item_get, boss_clear, victory, defeat, secret_found, save, shop_buy, danger, unlock", .{}),
+            error.FileNotFound => try std.fmt.allocPrint(allocator, "Error: file not found", .{}),
+            else => try std.fmt.allocPrint(allocator, "Error: {}", .{err}),
+        };
+        return .{ .text = err_msg, .is_error = true };
+    };
+    return .{ .text = text, .is_error = false };
+}
+
+fn executeToolInner(allocator: std.mem.Allocator, name: []const u8, args: std.json.ObjectMap) ![]const u8 {
     if (std.mem.eql(u8, name, "bgm_compose")) return execBgmCompose(allocator, args);
     if (std.mem.eql(u8, name, "jingle_gen")) return execJingleGen(allocator, args);
     if (std.mem.eql(u8, name, "se_gen")) return execSeGen(allocator, args);
